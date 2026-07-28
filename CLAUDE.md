@@ -31,10 +31,47 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
 
 ## Estado actual
 - ✅ Plan definido y aprobado. `CLAUDE.md` creado.
+- ✅ **Repositorio Git + GitHub** (`joaqovrs/mi-spotify`, privado). Flujo de ramas y Pull Requests
+  en funcionamiento.
+- ✅ **CI activo**: workflow en `.github/workflows/ci.yml` que valida `infra/docker-compose.yml`
+  en cada PR. `main` protegida por ruleset (no se puede mergear en rojo ni pushear directo).
+- ✅ **Configuración de Navidrome escrita por adelantado** en `infra/docker-compose.yml`,
+  lista para desplegar cuando exista el servidor.
 - ⏳ **Siguiente paso:** instalar **Debian 12 amd64** (sin escritorio; marcar solo *SSH server* +
   *standard system utilities*; usuario propio; red por cable si es posible).
 - Al retomar, tras iniciar sesión en Debian: conectar por SSH desde Windows → desactivar
   suspensión al cerrar tapa → `apt update && upgrade` → crear `/srv/musica` → Fase 2 (Navidrome).
+
+## Flujo de trabajo (CI/CD)
+El proyecto se desarrolla con metodología CI/CD como práctica deliberada. **Todo cambio entra
+por rama + Pull Request**, nunca directo a `main`.
+
+```
+rama nueva → commit → push → Pull Request → CI verde ✅ → merge → borrar rama → git pull
+```
+
+- **Convención de nombres** (ramas y commits): `feat:` funcionalidad, `fix:` arreglos,
+  `docs:` documentación, `chore:` mantenimiento.
+- **CI** (`.github/workflows/ci.yml`): corre en cada PR y en cada push a `main`. Chequeo actual:
+  `docker compose -f infra/docker-compose.yml config`.
+- **Protección de `main`** (Settings → Rules → Rulesets): exige PR, exige el chequeo en verde,
+  bloquea force push y borrado. Sin bypass para el dueño; *required approvals* en 0 (proyecto
+  de una sola persona).
+- **Manual del flujo** en `docs/manual-flujo-git.pdf` — carpeta `docs/` ignorada a propósito,
+  no se versiona.
+
+### Hoja de ruta CI/CD
+| Paso | Qué es | Estado |
+|---|---|---|
+| 1–2 | Git configurado + repo en GitHub | ✅ |
+| 3 | Ramas y Pull Requests | ✅ |
+| 4 | Primer workflow de CI (valida el compose) | ✅ |
+| 5 | `main` protegida: el CI con poder de veto | ✅ |
+| 6 | **CD**: la Debian se actualiza sola al mergear (runner self-hosted) | ⏸ necesita la laptop |
+| 7 | CI de la app Flutter (`flutter analyze` + `flutter test`) | ⏸ necesita la app |
+| 8 | **CD**: APK firmado publicado en GitHub Releases al taguear versión | ⏸ necesita la app |
+
+Los pasos 1–5 se completaron sin hardware; es el tope de lo posible antes de tener el servidor.
 
 ## Costo
 Todo el software es gratuito (Debian, Navidrome, Tailscale free, Flutter). Único costo real:
@@ -54,8 +91,11 @@ electricidad de la laptop encendida 24/7. No se paga dominio ni IP fija.
 
 ### Fase 2 — Navidrome (backend)
 - Instalar vía **Docker Compose**. Servicio en el puerto **4533**.
-- Compose apunta la carpeta de música (`/srv/musica:/music:ro`) y una carpeta `data` persistente.
+- ✅ El compose **ya está escrito y validado por CI** en `infra/docker-compose.yml`: apunta la
+  carpeta de música (`/srv/musica:/music:ro`) y una carpeta `data` persistente.
+- En el servidor: clonar el repo, `docker compose up -d` desde `infra/`.
 - Crear usuario admin en `http://ip-local:4533` y esperar el primer escaneo.
+- Después: instalar el **runner self-hosted** de GitHub Actions en la Debian → paso 6 (CD).
 
 ### Fase 3 — Acceso remoto (Tailscale)
 - Cuenta gratis en Tailscale; instalar en laptop (`tailscale up`) y en el teléfono (misma cuenta).
