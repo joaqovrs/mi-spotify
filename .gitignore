@@ -1,0 +1,14 @@
+# Datos internos de Navidrome (base de datos, caché)
+data/
+
+# Archivos con contraseñas
+.env
+
+# Música (nunca va al repo)
+musica/
+*.mp3
+*.flac
+
+# Basura de Windows
+Thumbs.db
+desktop.ini
