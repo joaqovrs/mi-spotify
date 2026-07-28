@@ -12,3 +12,6 @@ musica/
 # Basura de Windows
 Thumbs.db
 desktop.ini
+
+# Documentación generada localmente (manuales en PDF)
+docs/
