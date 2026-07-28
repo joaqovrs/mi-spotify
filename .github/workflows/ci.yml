@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validar-infra:
+    name: Validar configuración de Navidrome
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Comprobar que docker-compose.yml es válido
+        run: docker compose -f infra/docker-compose.yml config
