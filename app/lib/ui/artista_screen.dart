@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
+import '../state/favoritos_providers.dart';
 import 'album_screen.dart';
+import 'widgets/boton_favorito.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -21,7 +23,16 @@ class ArtistaScreen extends ConsumerWidget {
     final textos = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(artista.nombre)),
+      appBar: AppBar(
+        title: Text(artista.nombre),
+        actions: [
+          BotonFavorito(
+            id: artista.id,
+            onAlternar: () =>
+                ref.read(favoritosProvider.notifier).alternarArtista(artista),
+          ),
+        ],
+      ),
       bottomNavigationBar: const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),

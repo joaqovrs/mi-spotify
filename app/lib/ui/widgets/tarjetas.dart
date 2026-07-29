@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../models/biblioteca.dart';
+import '../../state/favoritos_providers.dart';
 import 'portada.dart';
 
 /// Tarjeta vertical de álbum para los carruseles y la grilla.
@@ -57,11 +59,12 @@ class TarjetaAlbum extends StatelessWidget {
 /// Con [sonando] en true se pinta de naranja y cambia la duración por un
 /// ícono de ecualizador, para que se vea de un golpe cuál de la lista está
 /// reproduciéndose.
-class FilaCancion extends StatelessWidget {
+class FilaCancion extends ConsumerWidget {
   const FilaCancion({
     required this.cancion,
     this.onTap,
     this.onAgregarACola,
+    this.onAlternarFavorito,
     this.sonando = false,
     super.key,
   });
@@ -72,10 +75,15 @@ class FilaCancion extends StatelessWidget {
   /// Si se pasa, aparece el menú "..." con la opción de encolar.
   final VoidCallback? onAgregarACola;
 
+  /// Si se pasa, el menú "..." incluye marcar o desmarcar favorito.
+  final VoidCallback? onAlternarFavorito;
+
   final bool sonando;
 
+  bool get _tieneMenu => onAgregarACola != null || onAlternarFavorito != null;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tema = Theme.of(context);
     final textos = tema.textTheme;
 
@@ -123,22 +131,50 @@ class FilaCancion extends StatelessWidget {
               Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
             else
               Text(cancion.duracionFormateada, style: textos.bodySmall),
-            if (onAgregarACola != null)
+            if (_tieneMenu)
               PopupMenuButton<void>(
                 icon: const Icon(Icons.more_horiz_rounded),
                 tooltip: 'Más opciones',
-                itemBuilder: (context) => [
-                  PopupMenuItem<void>(
-                    onTap: onAgregarACola,
-                    child: const Row(
-                      children: [
-                        Icon(Icons.queue_music_rounded, size: 20),
-                        SizedBox(width: 12),
-                        Text('Agregar a la cola'),
-                      ],
-                    ),
-                  ),
-                ],
+                itemBuilder: (context) {
+                  final esFavorito = ref
+                      .read(idsFavoritosProvider)
+                      .contains(cancion.id);
+
+                  return [
+                    if (onAlternarFavorito != null)
+                      PopupMenuItem<void>(
+                        onTap: onAlternarFavorito,
+                        child: Row(
+                          children: [
+                            Icon(
+                              esFavorito
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 20,
+                              color: esFavorito ? AppColors.naranja : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              esFavorito
+                                  ? 'Quitar de favoritos'
+                                  : 'Agregar a favoritos',
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (onAgregarACola != null)
+                      PopupMenuItem<void>(
+                        onTap: onAgregarACola,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.queue_music_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('Agregar a la cola'),
+                          ],
+                        ),
+                      ),
+                  ];
+                },
               ),
           ],
         ),

@@ -94,6 +94,19 @@ MediaItem aMediaItem(Cancion cancion, SubsonicClient cliente) {
 /// Id de portada guardado en el [MediaItem], si el servidor informó uno.
 String? portadaDe(MediaItem item) => item.extras?['coverArt'] as String?;
 
+/// Camino inverso: rearma la [Cancion] a partir de lo que suena.
+///
+/// La pantalla de reproducción solo tiene el [MediaItem], pero para marcar
+/// favoritos hace falta el modelo del servidor.
+Cancion cancionDe(MediaItem item) => Cancion(
+  id: item.id,
+  titulo: item.title,
+  artista: item.artist ?? 'Artista desconocido',
+  album: item.album,
+  coverArt: portadaDe(item),
+  duracion: item.duration?.inSeconds,
+);
+
 /// Arranca la reproducción de una lista de canciones desde una posición.
 Future<void> reproducir(
   WidgetRef ref,

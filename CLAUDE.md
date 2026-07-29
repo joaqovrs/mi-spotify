@@ -214,14 +214,20 @@ Mejoras opcionales una vez que ande:
 | 2 | Inicio con carruseles de datos reales | ✅ |
 | 3 | Reproductor (`just_audio` + `audio_service`), Now Playing, mini reproductor | ✅ |
 | 4 | Búsqueda (`search3`) | ✅ |
-| 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ⏳ siguiente |
-| 6 | Playlists: crear, editar, borrar | ⏸ |
+| 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ✅ |
+| 6 | Playlists: crear, editar, borrar | ⏳ siguiente |
 | 7 | Descargas offline | ⏸ |
 
 **Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
 y artista (no solo al shell de pestañas); la canción que suena se marca en las listas; botón
 *Aleatorio* en el álbum que **mezcla la cola de verdad** en vez de activar un modo invisible; y
 *Agregar a la cola* desde el menú `···` de cada canción y desde el AppBar del álbum.
+
+**Favoritos (etapa 5):** `getStarred2` es la **única** fuente de verdad. Los álbumes y canciones
+que llegan de otros endpoints también traen si están marcados, pero mezclar ambas fuentes produce
+incoherencias (desmarcás algo y el listado viejo lo sigue mostrando lleno). Como los ids de Subsonic
+son únicos entre tipos, un solo conjunto de ids alcanza para todos los corazones. El toque actualiza
+la pantalla primero y confirma contra el servidor después; si falla, revierte solo.
 
 **Doble dirección (etapa 1):** el cliente guarda la IP local y la del tailnet y descubre sola cuál
 responde — sonda la local con timeout corto (1,8 s) y cae a la remota si no contesta. Si la activa
