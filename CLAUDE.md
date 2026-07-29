@@ -51,9 +51,11 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
   tailnet **`100.91.22.33`**, expiración de clave desactivada, app instalada en el teléfono.
   **Prueba de fuego superada:** reproducción OK desde el teléfono con el WiFi apagado (solo datos
   móviles). El backend está terminado y accesible desde cualquier red.
-- 🔄 **Fase 4 en curso (29-07-2026):** entorno Flutter montado y **etapa 1 de la app terminada**
-  (login contra Navidrome real, sesión persistente, doble dirección local/tailnet, tema claro y
-  oscuro, navegación). Detalle en la sección Fase 4.
+- 🔄 **Fase 4 en curso (29-07-2026): 5 de 7 etapas de la app terminadas y probadas en el teléfono.**
+  Andando: login con doble dirección local/tailnet, sesión persistente, tema claro y oscuro,
+  pantalla de inicio con carruseles reales, reproductor con segundo plano y controles en la
+  notificación, buscador, cola con aleatorio y "agregar a la cola", y biblioteca de favoritos.
+  **Faltan la etapa 6 (playlists) y la 7 (descargas offline).** Detalle en la sección Fase 4.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
@@ -190,6 +192,23 @@ Mejoras opcionales una vez que ande:
 | Instalación | ⚠️ HyperOS bloquea `adb install` (`INSTALL_FAILED_USER_RESTRICTED`). Workaround: `adb push` del APK a `/sdcard/Download/` e instalar desde el explorador del teléfono |
 
 `flutter doctor` marca **Visual Studio en rojo a propósito**: es solo para apps de escritorio Windows.
+
+#### Ciclo de trabajo de la app
+Flutter **no está en el PATH del shell de Claude**, así que se invoca por ruta completa:
+
+```powershell
+cd C:\dev\mi-spotify\app
+& C:\dev\flutter\bin\flutter.bat analyze
+& C:\dev\flutter\bin\flutter.bat test
+& C:\dev\flutter\bin\flutter.bat build apk --release
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb push build\app\outputs\flutter-apk\app-release.apk /sdcard/Download/mi-spotify.apk
+```
+
+⚠️ **`adb push` miente:** imprime `1 file pushed` incluso cuando la transferencia se corta
+(pasó tres veces, con `failed to read copy response: EOF`). **Siempre comparar tamaños**
+con `& $adb shell "ls -l /sdcard/Download/mi-spotify.apk"` contra el archivo local antes de
+avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta solo.
 
 #### Decisiones de diseño
 - Referencia visual: mucho aire, fondo blanco, tipografía pesada en títulos, tarjetas muy redondeadas.
