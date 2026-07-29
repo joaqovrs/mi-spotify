@@ -1,14 +1,36 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme.dart';
+import 'services/reproductor_handler.dart';
+import 'state/reproductor_providers.dart';
 import 'state/sesion_providers.dart';
 import 'state/tema_providers.dart';
 import 'ui/login_screen.dart';
 import 'ui/shell_screen.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MiSpotifyApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Tiene que crearse antes de la app: engancha el servicio de Android que
+  // sostiene la reproducción en segundo plano.
+  final handler = await AudioService.init(
+    builder: ReproductorHandler.new,
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.joaqovrs.mi_spotify.audio',
+      androidNotificationChannelName: 'Reproducción',
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    ),
+  );
+
+  runApp(
+    ProviderScope(
+      overrides: [reproductorProvider.overrideWithValue(handler)],
+      child: const MiSpotifyApp(),
+    ),
+  );
 }
 
 class MiSpotifyApp extends ConsumerWidget {

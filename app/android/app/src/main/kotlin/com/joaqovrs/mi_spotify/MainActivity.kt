@@ -1,5 +1,7 @@
 package com.joaqovrs.mi_spotify
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// Hereda de AudioServiceActivity (y no de FlutterActivity) para que la
+// reproducción sobreviva cuando la app pasa a segundo plano.
+class MainActivity : AudioServiceActivity()

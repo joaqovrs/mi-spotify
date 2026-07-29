@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
+import '../models/biblioteca.dart';
+
 /// Error devuelto por el servidor Subsonic (Navidrome) o por la conexión.
 class SubsonicException implements Exception {
   const SubsonicException(this.mensaje, {this.codigo});
@@ -245,12 +247,97 @@ class SubsonicClient {
   /// Verifica servidor y credenciales de una sola vez.
   Future<void> ping() => _get('ping');
 
-  /// URL de la portada de un álbum o canción, lista para `Image.network`.
-  Uri urlPortada(String id, {int? tamano}) => construirUri('getCoverArt', {
-    'id': id,
-    if (tamano != null) 'size': '$tamano',
-  });
+  /// URL de la portada de un álbum o canción.
+  ///
+  /// El resultado se memoriza a propósito. Como cada llamada genera un salt
+  /// nuevo, sin esta caché la URL cambiaría en cada rebuild del widget y la
+  /// caché de imágenes nunca acertaría: cada scroll volvería a descargar todas
+  /// las portadas.
+  Uri urlPortada(String id, {int? tamano}) {
+    final clave = '$id@${tamano ?? 0}';
+    return _portadas.putIfAbsent(
+      clave,
+      () => construirUri('getCoverArt', {
+        'id': id,
+        if (tamano != null) 'size': '$tamano',
+      }),
+    );
+  }
+
+  final Map<String, Uri> _portadas = {};
 
   /// URL de streaming de una canción, lista para el reproductor.
   Uri urlStream(String id) => construirUri('stream', {'id': id});
+
+  // ---------------------------------------------------------------- Biblioteca
+
+  /// Álbumes según un criterio de `getAlbumList2`.
+  ///
+  /// Tipos que usa la pantalla de inicio: `newest` (agregados recientemente),
+  /// `frequent` (los que más escuchaste), `recent` (los últimos que sonaron),
+  /// `random` y `alphabeticalByName`.
+  Future<List<Album>> albumes({
+    required String tipo,
+    int cantidad = 20,
+    int desplazamiento = 0,
+  }) async {
+    final datos = await _get('getAlbumList2', {
+      'type': tipo,
+      'size': '$cantidad',
+      'offset': '$desplazamiento',
+    });
+
+    return _comoLista(datos['albumList2'], 'album')
+        .map(Album.desdeJson)
+        .toList();
+  }
+
+  /// Canciones al azar de toda la biblioteca.
+  Future<List<Cancion>> cancionesAlAzar({int cantidad = 50}) async {
+    final datos = await _get('getRandomSongs', {'size': '$cantidad'});
+
+    return _comoLista(datos['randomSongs'], 'song')
+        .map(Cancion.desdeJson)
+        .toList();
+  }
+
+  /// Todos los artistas. Subsonic los devuelve agrupados por letra inicial,
+  /// así que hay que aplanar los índices.
+  Future<List<Artista>> artistas() async {
+    final datos = await _get('getArtists');
+    final indices = _comoLista(datos['artists'], 'index');
+
+    return [
+      for (final indice in indices)
+        ..._comoLista(indice, 'artist').map(Artista.desdeJson),
+    ];
+  }
+
+  /// Canciones de un álbum, en el orden del disco.
+  Future<List<Cancion>> cancionesDeAlbum(String albumId) async {
+    final datos = await _get('getAlbum', {'id': albumId});
+
+    return _comoLista(datos['album'], 'song').map(Cancion.desdeJson).toList();
+  }
+
+  /// Álbumes de un artista.
+  Future<List<Album>> albumesDeArtista(String artistaId) async {
+    final datos = await _get('getArtist', {'id': artistaId});
+
+    return _comoLista(datos['artist'], 'album').map(Album.desdeJson).toList();
+  }
+
+  /// Saca una lista de un contenedor de Subsonic tolerando las dos formas en
+  /// que puede venir: ausente cuando está vacía, o un objeto suelto en vez de
+  /// una lista cuando hay un único elemento.
+  List<Map<String, dynamic>> _comoLista(dynamic contenedor, String clave) {
+    if (contenedor is! Map) return const [];
+
+    final valor = contenedor[clave];
+    if (valor is List) {
+      return valor.whereType<Map>().map(Map<String, dynamic>.from).toList();
+    }
+    if (valor is Map) return [Map<String, dynamic>.from(valor)];
+    return const [];
+  }
 }
