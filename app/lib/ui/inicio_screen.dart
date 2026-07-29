@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
+import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
 import 'album_screen.dart';
@@ -204,6 +205,9 @@ class _PestanaCanciones extends ConsumerWidget {
               // La cola pasa a ser la lista entera, arrancando en la que tocó.
               onTap: () => reproducir(ref, canciones, i),
               onAgregarACola: () => encolar(context, ref, [canciones[i]]),
+              onAlternarFavorito: () => ref
+                  .read(favoritosProvider.notifier)
+                  .alternarCancion(canciones[i]),
             ),
           );
         },

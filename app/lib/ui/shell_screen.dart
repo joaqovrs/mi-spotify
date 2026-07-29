@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'ajustes_screen.dart';
+import 'biblioteca_screen.dart';
 import 'buscar_screen.dart';
 import 'inicio_screen.dart';
-import 'proximamente_screen.dart';
 import 'widgets/mini_reproductor.dart';
 
 /// Contenedor principal con la barra de navegación inferior.
@@ -23,11 +23,7 @@ class _ShellScreenState extends State<ShellScreen> {
   static const _pantallas = <Widget>[
     InicioScreen(),
     BuscarScreen(),
-    ProximamenteScreen(
-      titulo: 'Tu biblioteca',
-      icono: Icons.favorite_rounded,
-      detalle: 'Favoritos, playlists y artistas seguidos.',
-    ),
+    BibliotecaScreen(),
     AjustesScreen(),
   ];
 

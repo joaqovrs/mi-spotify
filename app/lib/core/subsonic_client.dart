@@ -327,6 +327,41 @@ class SubsonicClient {
     return _comoLista(datos['artist'], 'album').map(Album.desdeJson).toList();
   }
 
+  // ---------------------------------------------------------------- Favoritos
+
+  /// Todo lo marcado con estrella en el servidor.
+  Future<Favoritos> favoritos() async {
+    final datos = await _get('getStarred2');
+    final estrellados = datos['starred2'];
+
+    return Favoritos(
+      canciones: _comoLista(estrellados, 'song').map(Cancion.desdeJson).toList(),
+      albumes: _comoLista(estrellados, 'album').map(Album.desdeJson).toList(),
+      artistas: _comoLista(
+        estrellados,
+        'artist',
+      ).map(Artista.desdeJson).toList(),
+    );
+  }
+
+  /// Marca o desmarca un favorito.
+  ///
+  /// Subsonic usa un parámetro distinto por tipo (`id` para canciones,
+  /// `albumId`, `artistId`) y dos endpoints distintos en vez de un booleano.
+  Future<void> marcarFavorito({
+    required String id,
+    required TipoFavorito tipo,
+    required bool favorito,
+  }) async {
+    final parametro = switch (tipo) {
+      TipoFavorito.cancion => 'id',
+      TipoFavorito.album => 'albumId',
+      TipoFavorito.artista => 'artistId',
+    };
+
+    await _get(favorito ? 'star' : 'unstar', {parametro: id});
+  }
+
   /// Busca en toda la biblioteca: canciones, álbumes y artistas de una vez.
   Future<ResultadoBusqueda> buscar(String consulta, {int porTipo = 30}) async {
     final texto = consulta.trim();

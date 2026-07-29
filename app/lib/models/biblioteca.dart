@@ -4,6 +4,9 @@
 /// todos los parseos toleran ausencias.
 library;
 
+/// Los tres tipos que Subsonic permite marcar como favoritos.
+enum TipoFavorito { cancion, album, artista }
+
 class Album {
   const Album({
     required this.id,
@@ -99,6 +102,50 @@ class ResultadoBusqueda {
 
   bool get estaVacio =>
       canciones.isEmpty && albumes.isEmpty && artistas.isEmpty;
+}
+
+/// Todo lo que marcaste como favorito, tal como lo devuelve `getStarred2`.
+class Favoritos {
+  const Favoritos({
+    required this.canciones,
+    required this.albumes,
+    required this.artistas,
+  });
+
+  const Favoritos.vacio()
+    : canciones = const [],
+      albumes = const [],
+      artistas = const [];
+
+  final List<Cancion> canciones;
+  final List<Album> albumes;
+  final List<Artista> artistas;
+
+  bool get estaVacio =>
+      canciones.isEmpty && albumes.isEmpty && artistas.isEmpty;
+
+  /// Ids de todo lo marcado, sin importar el tipo. Es lo que consultan los
+  /// corazones de la interfaz para saber si tienen que estar rellenos.
+  ///
+  /// Los ids de Subsonic son únicos entre tipos, así que un solo conjunto
+  /// alcanza y evita tener que saber de qué tipo es cada cosa al preguntar.
+  Set<String> get ids => {
+    for (final c in canciones) c.id,
+    for (final a in albumes) a.id,
+    for (final a in artistas) a.id,
+  };
+
+  Favoritos copiarCon({
+    List<Cancion>? canciones,
+    List<Album>? albumes,
+    List<Artista>? artistas,
+  }) {
+    return Favoritos(
+      canciones: canciones ?? this.canciones,
+      albumes: albumes ?? this.albumes,
+      artistas: artistas ?? this.artistas,
+    );
+  }
 }
 
 class Artista {

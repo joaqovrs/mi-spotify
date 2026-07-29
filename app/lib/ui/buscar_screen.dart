@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
+import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
 import 'album_screen.dart';
@@ -138,6 +139,9 @@ class _Resultados extends ConsumerWidget {
                   onTap: () => reproducir(ref, resultado.canciones, i),
                   onAgregarACola: () =>
                       encolar(context, ref, [resultado.canciones[i]]),
+                  onAlternarFavorito: () => ref
+                      .read(favoritosProvider.notifier)
+                      .alternarCancion(resultado.canciones[i]),
                 ),
             ],
             if (resultado.albumes.isNotEmpty) ...[

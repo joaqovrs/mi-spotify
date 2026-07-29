@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
+import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'widgets/boton_favorito.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -31,6 +33,11 @@ class AlbumScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(album.nombre),
         actions: [
+          BotonFavorito(
+            id: album.id,
+            onAlternar: () =>
+                ref.read(favoritosProvider.notifier).alternarAlbum(album),
+          ),
           if (canciones.isNotEmpty)
             PopupMenuButton<void>(
               tooltip: 'Más opciones',
@@ -117,6 +124,9 @@ class AlbumScreen extends ConsumerWidget {
                   onTap: () => reproducir(ref, canciones, i),
                   onAgregarACola: () =>
                       encolar(context, ref, [canciones[i]]),
+                  onAlternarFavorito: () => ref
+                      .read(favoritosProvider.notifier)
+                      .alternarCancion(canciones[i]),
                 ),
           ],
         ),

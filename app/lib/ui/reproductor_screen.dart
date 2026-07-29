@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
+import 'widgets/boton_favorito.dart';
 import 'widgets/portada.dart';
 
 /// Pantalla completa de reproducción.
@@ -44,12 +46,28 @@ class ReproductorScreen extends ConsumerWidget {
                 radio: 28,
               ),
               const Spacer(flex: 2),
-              Text(
-                cancion.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textos.displaySmall?.copyWith(fontSize: 25),
+              Row(
+                children: [
+                  // Un hueco del mismo ancho que el corazón, para que el
+                  // título quede centrado de verdad y no corrido hacia la
+                  // izquierda.
+                  const SizedBox(width: 48),
+                  Expanded(
+                    child: Text(
+                      cancion.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textos.displaySmall?.copyWith(fontSize: 25),
+                    ),
+                  ),
+                  BotonFavorito(
+                    id: cancion.id,
+                    onAlternar: () => ref
+                        .read(favoritosProvider.notifier)
+                        .alternarCancion(cancionDe(cancion)),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
