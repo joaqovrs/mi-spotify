@@ -51,14 +51,15 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
   tailnet **`100.91.22.33`**, expiración de clave desactivada, app instalada en el teléfono.
   **Prueba de fuego superada:** reproducción OK desde el teléfono con el WiFi apagado (solo datos
   móviles). El backend está terminado y accesible desde cualquier red.
-- ⏳ **Siguiente paso: Fase 4 (app Flutter)** — el MVP del cliente Android.
+- 🔄 **Fase 4 en curso (29-07-2026):** entorno Flutter montado y **etapa 1 de la app terminada**
+  (login contra Navidrome real, sesión persistente, doble dirección local/tailnet, tema claro y
+  oscuro, navegación). Detalle en la sección Fase 4.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
 |---|---|
-| **Commits del repo** | `CLAUDE.md` está modificado **sin commitear**, en la rama `docs/estado-cicd`, que además tiene un PR abierto sin mergear. Definir si se basa una rama nueva en `main` o se cierra primero ese PR. |
 | **Resto de la música** | Subir por WinSCP a `/srv/musica`, estructura `Artista/Álbum/`. |
-| **Reserva DHCP** | La IP `192.168.1.194` es dinámica; fijarla en el router (`192.168.1.1`) atándola a la MAC. |
+| **Reserva DHCP** | La IP `192.168.1.194` es dinámica; fijarla en el router (`192.168.1.1`) atándola a la MAC (`d8-c0-a6-85-a6-a5`). Si cambia, la dirección local guardada en la app deja de servir y cae siempre al tailnet. |
 | **Cable de red** | La laptop está por WiFi (`wlp1s0`); ethernet sería más estable para 24/7. |
 
 ### Datos del servidor
@@ -100,7 +101,7 @@ rama nueva → commit → push → Pull Request → CI verde ✅ → merge → b
 | 4 | Primer workflow de CI (valida el compose) | ✅ |
 | 5 | `main` protegida: el CI con poder de veto | ✅ |
 | 6 | **CD**: la Debian se actualiza sola al mergear (runner self-hosted) | 🔓 desbloqueado (la laptop ya está) |
-| 7 | CI de la app Flutter (`flutter analyze` + `flutter test`) | ⏸ necesita la app |
+| 7 | CI de la app Flutter (`flutter analyze` + `flutter test`) | 🔓 desbloqueado (la app ya existe) |
 | 8 | **CD**: APK firmado publicado en GitHub Releases al taguear versión | ⏸ necesita la app |
 
 Los pasos 1–5 se completaron sin hardware; es el tope de lo posible antes de tener el servidor.
@@ -174,25 +175,64 @@ Mejoras opcionales una vez que ande:
 - **MagicDNS:** usar `http://mi-spotify:4533` en vez de la IP numérica.
 - **HTTPS:** `tailscale serve` da una URL `https://<host>.<tailnet>.ts.net` con certificado válido.
 
-### Fase 4 — App Flutter (cliente Android)
-- Entorno: Flutter SDK + Android Studio en Windows; probar en teléfono físico.
-- Paquetes clave: `just_audio` (streaming), `audio_service` (segundo plano/notificación),
-  `dio`/`http`, `crypto` (auth md5), `riverpod`, `cached_network_image`, `flutter_secure_storage`.
+### Fase 4 — App Flutter (cliente Android) 🔄 EN CURSO
 - **Auth Subsonic:** por request se manda `u`, `s` (salt), `t=md5(password+salt)`, `v=1.16.1`, `c=miSpotify`, `f=json`.
 - **Endpoints:** `ping`, `getArtists`, `getArtist`, `getAlbum`, `getAlbumList2`, `search3`,
   `getCoverArt`, `stream` (URL de reproducción), `star`/`getStarred2`, `scrobble`.
-- **MVP:** login → explorar biblioteca → reproducir con cola → segundo plano → búsqueda.
 
-Estructura Flutter propuesta:
+#### Entorno de desarrollo (listo, 29-07-2026)
+| Pieza | Detalle |
+|---|---|
+| Repo | `C:\dev\mi-spotify` — **movido fuera de OneDrive** (la sincronización rompe las builds de Gradle y la ruta tenía espacios) |
+| Flutter SDK | `C:\dev\flutter` (3.44.8 stable), en el PATH de usuario |
+| Android Studio | vía `winget install --id Google.AndroidStudio` — trae su propio JDK, no hace falta Java aparte |
+| Teléfono | Redmi `24090RA29G`, Android 16 (API 36), arm64 |
+| Instalación | ⚠️ HyperOS bloquea `adb install` (`INSTALL_FAILED_USER_RESTRICTED`). Workaround: `adb push` del APK a `/sdcard/Download/` e instalar desde el explorador del teléfono |
+
+`flutter doctor` marca **Visual Studio en rojo a propósito**: es solo para apps de escritorio Windows.
+
+#### Decisiones de diseño
+- Referencia visual: mucho aire, fondo blanco, tipografía pesada en títulos, tarjetas muy redondeadas.
+- **Acento naranja** `#FF6B2C`. Tema claro + oscuro + seguir al sistema.
+- **Poppins empaquetada en el APK** (no por CDN): la app tiene que verse igual conectada solo al tailnet.
+- **Textos en español.**
+- **Nada de datos falsos.** Navidrome es de un solo usuario y privado: no hay éxitos globales, ni
+  listas curadas, ni playlists colaborativas. Esas secciones se reemplazan por equivalentes reales
+  (agregados recientemente, tus más escuchados, al azar) con la misma presentación.
+- Nav inferior: Inicio · Buscar · Biblioteca · Ajustes. Las descargas offline quedan para el final.
+
+#### Arreglos en `AndroidManifest.xml` (no obvios)
+- `<uses-permission android:name="android.permission.INTERNET"/>` — Flutter lo agrega solo en debug;
+  sin esto el APK de **release** queda sin red.
+- `android:usesCleartextTraffic="true"` — Android 9+ bloquea HTTP sin cifrar y Navidrome es `http://`
+  puro. No es riesgo: el tráfico ya va cifrado dentro del túnel de Tailscale.
+
+#### Etapas
+| # | Qué | Estado |
+|---|---|---|
+| 1 | Base: cliente Subsonic, login, sesión persistente, temas, navegación | ✅ |
+| 2 | Inicio con carruseles de datos reales | ⏳ siguiente |
+| 3 | Reproductor (`just_audio` + `audio_service`), Now Playing, mini reproductor | ⏸ |
+| 4 | Búsqueda (`search3`) | ⏸ |
+| 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ⏸ |
+| 6 | Playlists: crear, editar, borrar | ⏸ |
+| 7 | Descargas offline | ⏸ |
+
+**Doble dirección (etapa 1):** el cliente guarda la IP local y la del tailnet y descubre sola cuál
+responde — sonda la local con timeout corto (1,8 s) y cae a la remota si no contesta. Si la activa
+se cae a mitad de uso, la descarta y vuelve a resolver, así salir de casa con la app abierta no la
+rompe. Si el servidor **contesta pero rechaza** (contraseña mal), corta ahí en vez de seguir probando.
+
+Estructura real:
 ```
-lib/
-  main.dart
-  core/subsonic_client.dart   # cliente API (auth, endpoints, URLs)
-  core/auth_storage.dart      # credenciales con secure_storage
-  models/                     # Artist, Album, Song
-  services/audio_player_handler.dart  # just_audio + audio_service
-  state/                      # providers Riverpod
-  ui/                         # login, home, library, album, search, player, mini_player
+app/lib/
+  main.dart                     arranque + "puerta" login/app
+  core/theme.dart               paleta naranja, temas claro y oscuro
+  core/subsonic_client.dart     cliente API (auth, doble dirección, URLs)
+  core/auth_storage.dart        credenciales en el Keystore
+  state/sesion_providers.dart   estado de sesión (Riverpod)
+  state/tema_providers.dart     preferencia de tema
+  ui/                           login, shell, ajustes, proximamente
 ```
 
 ---
