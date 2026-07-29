@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/reproductor_providers.dart';
+import 'acciones.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -24,8 +25,30 @@ class AlbumScreen extends ConsumerWidget {
     // su cuenta: así al cambiar de tema se reconstruye la lista una sola vez.
     final sonandoId = ref.watch(cancionActualProvider).value?.id;
 
+    final canciones = asincrono.value ?? const <Cancion>[];
+
     return Scaffold(
-      appBar: AppBar(title: Text(album.nombre)),
+      appBar: AppBar(
+        title: Text(album.nombre),
+        actions: [
+          if (canciones.isNotEmpty)
+            PopupMenuButton<void>(
+              tooltip: 'Más opciones',
+              itemBuilder: (context) => [
+                PopupMenuItem<void>(
+                  onTap: () => encolar(context, ref, canciones),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.queue_music_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Agregar álbum a la cola'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       bottomNavigationBar: const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
@@ -52,12 +75,34 @@ class AlbumScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(_subtitulo(canciones.length), style: textos.bodySmall),
                   const SizedBox(height: 18),
-                  FilledButton.icon(
-                    onPressed: canciones.isEmpty
-                        ? null
-                        : () => reproducir(ref, canciones, 0),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Reproducir'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: canciones.isEmpty
+                              ? null
+                              : () => reproducir(ref, canciones, 0),
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('Reproducir'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: canciones.isEmpty
+                              ? null
+                              : () => reproducirAleatorio(ref, canciones),
+                          icon: const Icon(Icons.shuffle_rounded),
+                          label: const Text('Aleatorio'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -70,6 +115,8 @@ class AlbumScreen extends ConsumerWidget {
                   cancion: canciones[i],
                   sonando: canciones[i].id == sonandoId,
                   onTap: () => reproducir(ref, canciones, i),
+                  onAgregarACola: () =>
+                      encolar(context, ref, [canciones[i]]),
                 ),
           ],
         ),

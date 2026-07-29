@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/reproductor_providers.dart';
+import 'acciones.dart';
 import 'album_screen.dart';
 import 'artista_screen.dart';
 import 'widgets/estados.dart';
@@ -202,6 +203,7 @@ class _PestanaCanciones extends ConsumerWidget {
               sonando: canciones[i].id == sonandoId,
               // La cola pasa a ser la lista entera, arrancando en la que tocó.
               onTap: () => reproducir(ref, canciones, i),
+              onAgregarACola: () => encolar(context, ref, [canciones[i]]),
             ),
           );
         },

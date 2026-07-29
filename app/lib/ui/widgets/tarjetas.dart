@@ -61,12 +61,17 @@ class FilaCancion extends StatelessWidget {
   const FilaCancion({
     required this.cancion,
     this.onTap,
+    this.onAgregarACola,
     this.sonando = false,
     super.key,
   });
 
   final Cancion cancion;
   final VoidCallback? onTap;
+
+  /// Si se pasa, aparece el menú "..." con la opción de encolar.
+  final VoidCallback? onAgregarACola;
+
   final bool sonando;
 
   @override
@@ -118,6 +123,23 @@ class FilaCancion extends StatelessWidget {
               Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
             else
               Text(cancion.duracionFormateada, style: textos.bodySmall),
+            if (onAgregarACola != null)
+              PopupMenuButton<void>(
+                icon: const Icon(Icons.more_horiz_rounded),
+                tooltip: 'Más opciones',
+                itemBuilder: (context) => [
+                  PopupMenuItem<void>(
+                    onTap: onAgregarACola,
+                    child: const Row(
+                      children: [
+                        Icon(Icons.queue_music_rounded, size: 20),
+                        SizedBox(width: 12),
+                        Text('Agregar a la cola'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

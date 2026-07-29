@@ -327,6 +327,27 @@ class SubsonicClient {
     return _comoLista(datos['artist'], 'album').map(Album.desdeJson).toList();
   }
 
+  /// Busca en toda la biblioteca: canciones, álbumes y artistas de una vez.
+  Future<ResultadoBusqueda> buscar(String consulta, {int porTipo = 30}) async {
+    final texto = consulta.trim();
+    if (texto.isEmpty) return const ResultadoBusqueda.vacio();
+
+    final datos = await _get('search3', {
+      'query': texto,
+      'songCount': '$porTipo',
+      'albumCount': '$porTipo',
+      'artistCount': '$porTipo',
+    });
+
+    final resultado = datos['searchResult3'];
+
+    return ResultadoBusqueda(
+      canciones: _comoLista(resultado, 'song').map(Cancion.desdeJson).toList(),
+      albumes: _comoLista(resultado, 'album').map(Album.desdeJson).toList(),
+      artistas: _comoLista(resultado, 'artist').map(Artista.desdeJson).toList(),
+    );
+  }
+
   /// Saca una lista de un contenedor de Subsonic tolerando las dos formas en
   /// que puede venir: ausente cuando está vacía, o un objeto suelto en vez de
   /// una lista cuando hay un único elemento.

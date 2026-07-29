@@ -211,12 +211,17 @@ Mejoras opcionales una vez que ande:
 | # | Qué | Estado |
 |---|---|---|
 | 1 | Base: cliente Subsonic, login, sesión persistente, temas, navegación | ✅ |
-| 2 | Inicio con carruseles de datos reales | ⏳ siguiente |
-| 3 | Reproductor (`just_audio` + `audio_service`), Now Playing, mini reproductor | ⏸ |
-| 4 | Búsqueda (`search3`) | ⏸ |
-| 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ⏸ |
+| 2 | Inicio con carruseles de datos reales | ✅ |
+| 3 | Reproductor (`just_audio` + `audio_service`), Now Playing, mini reproductor | ✅ |
+| 4 | Búsqueda (`search3`) | ✅ |
+| 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ⏳ siguiente |
 | 6 | Playlists: crear, editar, borrar | ⏸ |
 | 7 | Descargas offline | ⏸ |
+
+**Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
+y artista (no solo al shell de pestañas); la canción que suena se marca en las listas; botón
+*Aleatorio* en el álbum que **mezcla la cola de verdad** en vez de activar un modo invisible; y
+*Agregar a la cola* desde el menú `···` de cada canción y desde el AppBar del álbum.
 
 **Doble dirección (etapa 1):** el cliente guarda la IP local y la del tailnet y descubre sola cuál
 responde — sonda la local con timeout corto (1,8 s) y cae a la remota si no contesta. Si la activa

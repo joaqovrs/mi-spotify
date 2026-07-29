@@ -79,6 +79,28 @@ class Cancion {
   }
 }
 
+/// Lo que devuelve una búsqueda: los tres tipos juntos, como los entrega
+/// `search3` en una sola llamada.
+class ResultadoBusqueda {
+  const ResultadoBusqueda({
+    required this.canciones,
+    required this.albumes,
+    required this.artistas,
+  });
+
+  const ResultadoBusqueda.vacio()
+    : canciones = const [],
+      albumes = const [],
+      artistas = const [];
+
+  final List<Cancion> canciones;
+  final List<Album> albumes;
+  final List<Artista> artistas;
+
+  bool get estaVacio =>
+      canciones.isEmpty && albumes.isEmpty && artistas.isEmpty;
+}
+
 class Artista {
   const Artista({
     required this.id,

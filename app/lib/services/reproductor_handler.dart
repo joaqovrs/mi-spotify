@@ -51,6 +51,22 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await _player.play();
   }
 
+  /// Suma canciones al final de la cola sin cortar lo que está sonando.
+  ///
+  /// Con la cola vacía no tendría sentido "agregar" a la nada: en ese caso
+  /// arranca la reproducción, que es lo que espera quien toca el botón.
+  Future<void> agregarACola(List<MediaItem> canciones) async {
+    if (canciones.isEmpty) return;
+
+    if (queue.value.isEmpty) {
+      await reproducirLista(canciones, 0);
+      return;
+    }
+
+    queue.add([...queue.value, ...canciones]);
+    await _player.addAudioSources(canciones.map(_fuenteDe).toList());
+  }
+
   AudioSource _fuenteDe(MediaItem item) {
     final url = item.extras?['url'] as String?;
     if (url == null) {

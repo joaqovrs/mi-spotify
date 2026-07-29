@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'ajustes_screen.dart';
+import 'buscar_screen.dart';
 import 'inicio_screen.dart';
 import 'proximamente_screen.dart';
 import 'widgets/mini_reproductor.dart';
@@ -21,11 +22,7 @@ class _ShellScreenState extends State<ShellScreen> {
 
   static const _pantallas = <Widget>[
     InicioScreen(),
-    ProximamenteScreen(
-      titulo: 'Buscar',
-      icono: Icons.search_rounded,
-      detalle: 'Buscador de canciones, álbumes y artistas.',
-    ),
+    BuscarScreen(),
     ProximamenteScreen(
       titulo: 'Tu biblioteca',
       icono: Icons.favorite_rounded,
