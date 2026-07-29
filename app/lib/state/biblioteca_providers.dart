@@ -50,6 +50,18 @@ final cancionesAlAzarProvider = FutureProvider<List<Cancion>>((ref) async {
   return ref.watch(clienteProvider).cancionesAlAzar(cantidad: 100);
 });
 
+/// Texto que se está buscando. Lo actualiza la pantalla de búsqueda con un
+/// retardo, para no disparar una consulta por cada tecla.
+final consultaProvider = StateProvider<String>((ref) => '');
+
+/// Resultados de la búsqueda actual.
+final busquedaProvider = FutureProvider<ResultadoBusqueda>((ref) async {
+  final consulta = ref.watch(consultaProvider);
+  if (consulta.trim().isEmpty) return const ResultadoBusqueda.vacio();
+
+  return ref.watch(clienteProvider).buscar(consulta);
+});
+
 /// Canciones de un álbum concreto.
 final cancionesDeAlbumProvider = FutureProvider.family<List<Cancion>, String>((
   ref,

@@ -106,6 +106,23 @@ Future<void> reproducir(
   await ref.read(reproductorProvider).reproducirLista(items, indice);
 }
 
+/// Reproduce una lista en orden al azar.
+///
+/// Mezcla una copia y la carga como cola, así el orden aleatorio queda visible
+/// en la cola en vez de ser un estado invisible del reproductor.
+Future<void> reproducirAleatorio(WidgetRef ref, List<Cancion> canciones) {
+  final mezclado = [...canciones]..shuffle();
+  return reproducir(ref, mezclado, 0);
+}
+
+/// Suma canciones al final de la cola.
+Future<void> agregarACola(WidgetRef ref, List<Cancion> canciones) async {
+  final cliente = ref.read(clienteProvider);
+  final items = [for (final c in canciones) aMediaItem(c, cliente)];
+
+  await ref.read(reproductorProvider).agregarACola(items);
+}
+
 /// Formatea una duración como `3:07` o `1:02:33`.
 String formatearDuracion(Duration d) {
   final horas = d.inHours;
