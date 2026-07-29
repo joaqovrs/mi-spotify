@@ -122,6 +122,23 @@ class AppTheme {
           ),
         ),
       ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: texto,
+        unselectedLabelColor: textoSuave,
+        indicatorColor: AppColors.naranja,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        labelStyle: const TextStyle(
+          fontFamily: _fuente,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: _fuente,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: fondo,
         indicatorColor: AppColors.naranja.withValues(alpha: 0.16),

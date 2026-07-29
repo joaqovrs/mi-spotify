@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'ajustes_screen.dart';
+import 'inicio_screen.dart';
 import 'proximamente_screen.dart';
+import 'widgets/mini_reproductor.dart';
 
 /// Contenedor principal con la barra de navegación inferior.
 ///
@@ -18,11 +20,7 @@ class _ShellScreenState extends State<ShellScreen> {
   int _indice = 0;
 
   static const _pantallas = <Widget>[
-    ProximamenteScreen(
-      titulo: 'Descubrir',
-      icono: Icons.music_note_rounded,
-      detalle: 'Acá van los carruseles con la música de tu servidor.',
-    ),
+    InicioScreen(),
     ProximamenteScreen(
       titulo: 'Buscar',
       icono: Icons.search_rounded,
@@ -40,7 +38,11 @@ class _ShellScreenState extends State<ShellScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _indice, children: _pantallas),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MiniReproductor(),
+          NavigationBar(
         selectedIndex: _indice,
         onDestinationSelected: (i) => setState(() => _indice = i),
         destinations: const [
@@ -60,9 +62,11 @@ class _ShellScreenState extends State<ShellScreen> {
             label: 'Biblioteca',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Ajustes',
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings_rounded),
+                label: 'Ajustes',
+              ),
+            ],
           ),
         ],
       ),
