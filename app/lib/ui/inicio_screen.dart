@@ -171,6 +171,7 @@ class _PestanaCanciones extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asincrono = ref.watch(cancionesAlAzarProvider);
+    final sonandoId = ref.watch(cancionActualProvider).value?.id;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(cancionesAlAzarProvider),
@@ -198,6 +199,7 @@ class _PestanaCanciones extends ConsumerWidget {
             itemCount: canciones.length,
             itemBuilder: (context, i) => FilaCancion(
               cancion: canciones[i],
+              sonando: canciones[i].id == sonandoId,
               // La cola pasa a ser la lista entera, arrancando en la que tocó.
               onTap: () => reproducir(ref, canciones, i),
             ),

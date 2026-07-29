@@ -5,6 +5,7 @@ import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'widgets/estados.dart';
+import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
 import 'widgets/tarjetas.dart';
 
@@ -19,8 +20,13 @@ class AlbumScreen extends ConsumerWidget {
     final asincrono = ref.watch(cancionesDeAlbumProvider(album.id));
     final textos = Theme.of(context).textTheme;
 
+    // Se mira acá y se pasa a cada fila, en vez de que cada fila lo observe por
+    // su cuenta: así al cambiar de tema se reconstruye la lista una sola vez.
+    final sonandoId = ref.watch(cancionActualProvider).value?.id;
+
     return Scaffold(
       appBar: AppBar(title: Text(album.nombre)),
+      bottomNavigationBar: const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
         error: (e, _) => EstadoError(
@@ -62,6 +68,7 @@ class AlbumScreen extends ConsumerWidget {
               for (var i = 0; i < canciones.length; i++)
                 FilaCancion(
                   cancion: canciones[i],
+                  sonando: canciones[i].id == sonandoId,
                   onTap: () => reproducir(ref, canciones, i),
                 ),
           ],

@@ -5,6 +5,7 @@ import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import 'album_screen.dart';
 import 'widgets/estados.dart';
+import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
 import 'widgets/tarjetas.dart';
 
@@ -21,6 +22,7 @@ class ArtistaScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(artista.nombre)),
+      bottomNavigationBar: const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
         error: (e, _) => EstadoError(

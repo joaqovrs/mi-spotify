@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme.dart';
 import '../../models/biblioteca.dart';
 import 'portada.dart';
 
@@ -52,19 +53,37 @@ class TarjetaAlbum extends StatelessWidget {
 }
 
 /// Fila de canción: portada chica, título, artista y duración.
+///
+/// Con [sonando] en true se pinta de naranja y cambia la duración por un
+/// ícono de ecualizador, para que se vea de un golpe cuál de la lista está
+/// reproduciéndose.
 class FilaCancion extends StatelessWidget {
-  const FilaCancion({required this.cancion, this.onTap, super.key});
+  const FilaCancion({
+    required this.cancion,
+    this.onTap,
+    this.sonando = false,
+    super.key,
+  });
 
   final Cancion cancion;
   final VoidCallback? onTap;
+  final bool sonando;
 
   @override
   Widget build(BuildContext context) {
-    final textos = Theme.of(context).textTheme;
+    final tema = Theme.of(context);
+    final textos = tema.textTheme;
+
+    // El naranja de marca no tiene contraste suficiente sobre blanco, así que
+    // en tema claro se usa la variante oscurecida.
+    final acento = tema.brightness == Brightness.dark
+        ? AppColors.naranja
+        : AppColors.naranjaTexto;
 
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        color: sonando ? acento.withValues(alpha: 0.08) : null,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         child: Row(
           children: [
@@ -79,7 +98,10 @@ class FilaCancion extends StatelessWidget {
                     cancion.titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: textos.titleMedium,
+                    style: textos.titleMedium?.copyWith(
+                      color: sonando ? acento : null,
+                      fontWeight: sonando ? FontWeight.w700 : null,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -92,7 +114,10 @@ class FilaCancion extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(cancion.duracionFormateada, style: textos.bodySmall),
+            if (sonando)
+              Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
+            else
+              Text(cancion.duracionFormateada, style: textos.bodySmall),
           ],
         ),
       ),
