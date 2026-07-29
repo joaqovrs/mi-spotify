@@ -15,3 +15,6 @@ desktop.ini
 
 # Documentación generada localmente (manuales en PDF)
 docs/
+
+# Permisos locales de Claude Code (específicos de esta máquina)
+.claude/settings.local.json
