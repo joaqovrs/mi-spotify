@@ -47,6 +47,13 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   /// que ya no respeta el orden original.
   String? get origenCola => _origenCola;
 
+  /// Si el modo aleatorio está encendido.
+  ///
+  /// Es un modo, no una acción: la cola conserva el orden del álbum o de la
+  /// playlist y solo cambia el recorrido. Por eso apagarlo devuelve todo a su
+  /// lugar sin tener que recargar nada.
+  bool get aleatorioActivo => _player.shuffleModeEnabled;
+
   /// Carga una lista y arranca en la posición indicada.
   Future<void> reproducirLista(
     List<MediaItem> canciones,
@@ -64,7 +71,25 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       initialIndex: indice,
       initialPosition: Duration.zero,
     );
+
+    // Cargar canciones nuevas reinicia el recorrido: hay que sortearlo otra vez
+    // o el aleatorio quedaría siguiendo el orden del disco.
+    if (_player.shuffleModeEnabled) await _player.shuffle();
+
     await _player.play();
+  }
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    final activo = shuffleMode != AudioServiceShuffleMode.none;
+
+    // Se sortea antes de encender para que cada vez que se active salga un
+    // recorrido nuevo, y no siempre el mismo de la primera vez. `shuffle` deja
+    // primera a la canción que está sonando, así que no se corta nada.
+    if (activo) await _player.shuffle();
+    await _player.setShuffleModeEnabled(activo);
+
+    playbackState.add(playbackState.value.copyWith(shuffleMode: shuffleMode));
   }
 
   /// Mueve una canción dentro de la cola sin cortar lo que suena.
