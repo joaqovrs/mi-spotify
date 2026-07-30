@@ -7,6 +7,7 @@ import '../state/favoritos_providers.dart';
 import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'widgets/boton_aleatorio.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -185,27 +186,17 @@ class _Contenido extends ConsumerWidget {
                       child: FilledButton.icon(
                         onPressed: canciones.isEmpty
                             ? null
-                            : () => _reproducirDesde(ref, 0),
+                            : () => reproducirTodo(
+                                ref,
+                                canciones,
+                                origen: origenDePlaylist(playlist.id),
+                              ),
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: const Text('Reproducir'),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: canciones.isEmpty
-                            ? null
-                            : () => reproducirAleatorio(ref, canciones),
-                        icon: const Icon(Icons.shuffle_rounded),
-                        label: const Text('Aleatorio'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(54),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: 8),
+                    const BotonAleatorio(),
                   ],
                 ),
                 if (canciones.length > 1) ...[

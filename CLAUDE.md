@@ -239,11 +239,26 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 | 7 | Descargas offline | ⏳ siguiente |
 
 **Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
-y artista (no solo al shell de pestañas); la canción que suena se marca en las listas; botón
-*Aleatorio* en el álbum que **mezcla la cola de verdad** en vez de activar un modo invisible;
+y artista (no solo al shell de pestañas); la canción que suena se marca en las listas;
 *Agregar a la cola* desde el menú `···` de cada canción y desde el AppBar del álbum; y
 **deslizar una canción hacia la derecha la manda a la cola** (el gesto nunca borra la fila:
 ejecuta la acción y la fila vuelve sola a su lugar).
+
+**Aleatorio: de acción a interruptor (30-07-2026).** Al principio el *Aleatorio* era un botón
+grande al lado de *Reproducir* que mezclaba la cola de una vez. **Decisión revertida a pedido:**
+ahora es un **interruptor de ícono solo**, discreto, que se deja puesto:
+
+- Encendido, el recorrido es al azar **también al saltar de canción**; apagado, la cola vuelve al
+  orden del álbum o la playlist.
+- Es un modo del reproductor (`setShuffleMode` de `audio_service` sobre `shuffleModeEnabled` de
+  `just_audio`), así que **la cola conserva el orden original** y apagarlo no necesita recargar
+  nada. Esto es lo que permite que el aleatorio conviva con reordenar la playlist.
+- Cargar canciones nuevas reinicia el recorrido, así que `reproducirLista` vuelve a sortear si el
+  modo está encendido. `shuffle()` deja primera a la que está sonando, por eso no corta nada.
+- Con el aleatorio puesto, *Reproducir* **arranca en una canción al azar**: si empezara siempre por
+  la primera, parecería que el interruptor no hace nada hasta el segundo tema.
+- El estado del botón sale del propio reproductor (`playbackState.shuffleMode`), no de una variable
+  aparte, así no puede quedar desfasado de lo que realmente suena.
 
 **Playlists (etapa 6):** las listas son del servidor, no de la app (`getPlaylists`, `getPlaylist`,
 `createPlaylist`, `updatePlaylist`, `deletePlaylist`). Tres cosas de la API que no son obvias:
@@ -266,8 +281,8 @@ se aplica a la reproducción — igual que Spotify. Detalles:
 - Vale para reordenar, quitar y agregar canciones.
 - Se aplica **después** de que el servidor confirma, no antes: la cola no está a la vista, así que
   no hace falta el truco optimista y se evita tener que deshacer el movimiento si falla.
-- *Aleatorio* **no** marca origen a propósito: la cola quedó en un orden que ya no es el de la
-  lista, y reordenar por índice la rompería.
+- Funciona igual con el aleatorio encendido, porque ese modo **no toca el orden de la cola**, solo
+  el recorrido. Los índices siguen coincidiendo con la lista de la pantalla.
 
 **Favoritos (etapa 5):** `getStarred2` es la **única** fuente de verdad. Los álbumes y canciones
 que llegan de otros endpoints también traen si están marcados, pero mezclar ambas fuentes produce

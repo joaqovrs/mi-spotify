@@ -6,6 +6,7 @@ import '../state/biblioteca_providers.dart';
 import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'widgets/boton_aleatorio.dart';
 import 'widgets/boton_favorito.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
@@ -98,27 +99,13 @@ class AlbumScreen extends ConsumerWidget {
                         child: FilledButton.icon(
                           onPressed: canciones.isEmpty
                               ? null
-                              : () => reproducir(ref, canciones, 0),
+                              : () => reproducirTodo(ref, canciones),
                           icon: const Icon(Icons.play_arrow_rounded),
                           label: const Text('Reproducir'),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: canciones.isEmpty
-                              ? null
-                              : () => reproducirAleatorio(ref, canciones),
-                          icon: const Icon(Icons.shuffle_rounded),
-                          label: const Text('Aleatorio'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(54),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(width: 8),
+                      const BotonAleatorio(),
                     ],
                   ),
                 ],

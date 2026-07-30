@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
@@ -132,16 +134,42 @@ Future<void> reproducir(
       .reproducirLista(items, indice, origen: origen);
 }
 
-/// Reproduce una lista en orden al azar.
+/// Arranca una lista entera desde el botón "Reproducir".
 ///
-/// Mezcla una copia y la carga como cola, así el orden aleatorio queda visible
-/// en la cola en vez de ser un estado invisible del reproductor.
+/// Con el aleatorio encendido empieza en una canción al azar. Si arrancara
+/// siempre por la primera, tener el aleatorio prendido parecería no hacer nada
+/// hasta que terminara el primer tema.
+Future<void> reproducirTodo(
+  WidgetRef ref,
+  List<Cancion> canciones, {
+  String? origen,
+}) {
+  if (canciones.isEmpty) return Future<void>.value();
+
+  final indice = ref.read(reproductorProvider).aleatorioActivo
+      ? Random().nextInt(canciones.length)
+      : 0;
+
+  return reproducir(ref, canciones, indice, origen: origen);
+}
+
+/// Si el modo aleatorio está encendido.
 ///
-/// A propósito no lleva [origen]: la cola quedó en un orden que ya no es el de
-/// la lista, así que reordenar la lista después no puede aplicarse por índice.
-Future<void> reproducirAleatorio(WidgetRef ref, List<Cancion> canciones) {
-  final mezclado = [...canciones]..shuffle();
-  return reproducir(ref, mezclado, 0);
+/// Sale del propio reproductor y no de una variable aparte, así el botón no
+/// puede quedar desfasado de lo que realmente está haciendo la reproducción.
+final aleatorioProvider = Provider<bool>((ref) {
+  final estado = ref.watch(estadoReproduccionProvider).value;
+  return estado?.shuffleMode == AudioServiceShuffleMode.all;
+});
+
+Future<void> alternarAleatorio(WidgetRef ref) {
+  final activo = ref.read(aleatorioProvider);
+
+  return ref
+      .read(reproductorProvider)
+      .setShuffleMode(
+        activo ? AudioServiceShuffleMode.none : AudioServiceShuffleMode.all,
+      );
 }
 
 /// Suma canciones al final de la cola.
