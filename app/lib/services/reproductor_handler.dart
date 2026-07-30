@@ -36,12 +36,28 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   final AudioPlayer _player = AudioPlayer();
 
+  String? _origenCola;
+
+  /// De dónde salió la cola que está sonando.
+  ///
+  /// Sirve para saber si una edición hecha en pantalla tiene que reflejarse en
+  /// la reproducción: reordenar la playlist que estás escuchando cambia lo que
+  /// viene, pero reordenar otra cualquiera no. Queda en null cuando la cola no
+  /// se corresponde con ninguna lista editable — un álbum, o una mezcla al azar
+  /// que ya no respeta el orden original.
+  String? get origenCola => _origenCola;
+
   /// Carga una lista y arranca en la posición indicada.
-  Future<void> reproducirLista(List<MediaItem> canciones, int indice) async {
+  Future<void> reproducirLista(
+    List<MediaItem> canciones,
+    int indice, {
+    String? origen,
+  }) async {
     if (canciones.isEmpty) return;
 
     queue.add(canciones);
     mediaItem.add(canciones[indice]);
+    _origenCola = origen;
 
     await _player.setAudioSources(
       canciones.map(_fuenteDe).toList(),
@@ -50,6 +66,46 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     );
     await _player.play();
   }
+
+  /// Mueve una canción dentro de la cola sin cortar lo que suena.
+  ///
+  /// Los índices son los mismos que usa `onReorderItem`: [hasta] es la posición
+  /// final, ya descontado el hueco que deja la canción movida. Es también lo
+  /// que espera `moveAudioSource`, así que pasan derecho.
+  Future<void> moverEnCola(int desde, int hasta) async {
+    final lista = queue.value;
+    if (!_enRango(desde, lista) || !_enRango(hasta, lista)) return;
+    if (desde == hasta) return;
+
+    final nueva = [...lista];
+    nueva.insert(hasta, nueva.removeAt(desde));
+    queue.add(nueva);
+
+    await _player.moveAudioSource(desde, hasta);
+  }
+
+  /// Saca una canción de la cola. Si era la última, deja el reproductor parado
+  /// en vez de en una cola vacía sonando a nada.
+  Future<void> quitarDeCola(int indice) async {
+    final lista = queue.value;
+    if (!_enRango(indice, lista)) return;
+
+    final nueva = [...lista]..removeAt(indice);
+    queue.add(nueva);
+
+    if (nueva.isEmpty) {
+      _origenCola = null;
+      mediaItem.add(null);
+      await _player.stop();
+      await _player.clearAudioSources();
+      return;
+    }
+
+    await _player.removeAudioSourceAt(indice);
+  }
+
+  bool _enRango(int indice, List<MediaItem> lista) =>
+      indice >= 0 && indice < lista.length;
 
   /// Suma canciones al final de la cola sin cortar lo que está sonando.
   ///

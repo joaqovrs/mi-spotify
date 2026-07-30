@@ -105,7 +105,7 @@ class FilaCancion extends ConsumerWidget {
         ? AppColors.naranja
         : AppColors.naranjaTexto;
 
-    return InkWell(
+    final fila = InkWell(
       onTap: onTap,
       child: Container(
         color: sonando ? acento.withValues(alpha: 0.08) : null,
@@ -216,6 +216,39 @@ class FilaCancion extends ConsumerWidget {
           ],
         ),
       ),
+    );
+
+    if (onAgregarACola == null) return fila;
+
+    return Dismissible(
+      // Por instancia y no por id: en una playlist la misma canción puede
+      // estar repetida y dos Dismissible hermanos no pueden compartir clave.
+      key: ObjectKey(cancion),
+      direction: DismissDirection.startToEnd,
+      // Nunca se descarta de verdad: el gesto es un atajo para encolar, así
+      // que se ejecuta la acción y la fila vuelve sola a su lugar.
+      confirmDismiss: (_) async {
+        onAgregarACola!();
+        return false;
+      },
+      dismissThresholds: const {DismissDirection.startToEnd: 0.28},
+      background: Container(
+        color: acento.withValues(alpha: 0.16),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.queue_music_rounded, color: acento),
+            const SizedBox(width: 10),
+            Text(
+              'A la cola',
+              style: textos.labelLarge?.copyWith(color: acento),
+            ),
+          ],
+        ),
+      ),
+      child: fila,
     );
   }
 }

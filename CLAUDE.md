@@ -51,11 +51,12 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
   tailnet **`100.91.22.33`**, expiración de clave desactivada, app instalada en el teléfono.
   **Prueba de fuego superada:** reproducción OK desde el teléfono con el WiFi apagado (solo datos
   móviles). El backend está terminado y accesible desde cualquier red.
-- 🔄 **Fase 4 en curso (29-07-2026): 5 de 7 etapas de la app terminadas y probadas en el teléfono.**
+- 🔄 **Fase 4 en curso (30-07-2026): 6 de 7 etapas de la app terminadas y probadas en el teléfono.**
   Andando: login con doble dirección local/tailnet, sesión persistente, tema claro y oscuro,
   pantalla de inicio con carruseles reales, reproductor con segundo plano y controles en la
-  notificación, buscador, cola con aleatorio y "agregar a la cola", y biblioteca de favoritos.
-  **Faltan la etapa 6 (playlists) y la 7 (descargas offline).** Detalle en la sección Fase 4.
+  notificación, buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos y
+  playlists con crear, editar y borrar.
+  **Falta solo la etapa 7 (descargas offline).** Detalle en la sección Fase 4.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
@@ -234,13 +235,39 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 | 3 | Reproductor (`just_audio` + `audio_service`), Now Playing, mini reproductor | ✅ |
 | 4 | Búsqueda (`search3`) | ✅ |
 | 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ✅ |
-| 6 | Playlists: crear, editar, borrar | ⏳ siguiente |
-| 7 | Descargas offline | ⏸ |
+| 6 | Playlists: crear, editar, borrar | ✅ |
+| 7 | Descargas offline | ⏳ siguiente |
 
 **Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
 y artista (no solo al shell de pestañas); la canción que suena se marca en las listas; botón
-*Aleatorio* en el álbum que **mezcla la cola de verdad** en vez de activar un modo invisible; y
-*Agregar a la cola* desde el menú `···` de cada canción y desde el AppBar del álbum.
+*Aleatorio* en el álbum que **mezcla la cola de verdad** en vez de activar un modo invisible;
+*Agregar a la cola* desde el menú `···` de cada canción y desde el AppBar del álbum; y
+**deslizar una canción hacia la derecha la manda a la cola** (el gesto nunca borra la fila:
+ejecuta la acción y la fila vuelve sola a su lugar).
+
+**Playlists (etapa 6):** las listas son del servidor, no de la app (`getPlaylists`, `getPlaylist`,
+`createPlaylist`, `updatePlaylist`, `deletePlaylist`). Tres cosas de la API que no son obvias:
+
+- Subsonic manda varias canciones **repitiendo el parámetro** (`songId=1&songId=2`), no separadas
+  por comas. El cliente acepta listas como valor de un parámetro para eso.
+- **Quitar va por posición, no por id:** una playlist admite la misma canción repetida y por id se
+  borrarían las dos.
+- **Reordenar exige reescribir la lista entera** (`createPlaylist` sobre un `playlistId` que ya
+  existe). `updatePlaylist` solo sabe agregar al final y quitar por índice.
+- En la UI se usa **`onReorderItem`**, no `onReorder` (deprecado en Flutter 3.44): el nuevo ya
+  entrega el índice de destino compensado por el hueco del elemento arrastrado.
+
+**La cola sigue a la playlist que suena (30-07-2026):** la cola era una foto sacada al tocar
+*Reproducir*, así que reordenar la playlist mientras sonaba no cambiaba nada hasta volver a darle
+play. Ahora el handler recuerda **de dónde salió la cola** (`origenCola`, del tipo
+`playlist:<id>`) y, cuando la playlist que se está editando es la que suena, el mismo movimiento
+se aplica a la reproducción — igual que Spotify. Detalles:
+
+- Vale para reordenar, quitar y agregar canciones.
+- Se aplica **después** de que el servidor confirma, no antes: la cola no está a la vista, así que
+  no hace falta el truco optimista y se evita tener que deshacer el movimiento si falla.
+- *Aleatorio* **no** marca origen a propósito: la cola quedó en un orden que ya no es el de la
+  lista, y reordenar por índice la rompería.
 
 **Favoritos (etapa 5):** `getStarred2` es la **única** fuente de verdad. Los álbumes y canciones
 que llegan de otros endpoints también traen si están marcados, pero mezclar ambas fuentes produce
@@ -256,13 +283,20 @@ rompe. Si el servidor **contesta pero rechaza** (contraseña mal), corta ahí en
 Estructura real:
 ```
 app/lib/
-  main.dart                     arranque + "puerta" login/app
-  core/theme.dart               paleta naranja, temas claro y oscuro
-  core/subsonic_client.dart     cliente API (auth, doble dirección, URLs)
-  core/auth_storage.dart        credenciales en el Keystore
-  state/sesion_providers.dart   estado de sesión (Riverpod)
-  state/tema_providers.dart     preferencia de tema
-  ui/                           login, shell, ajustes, proximamente
+  main.dart                          arranque + "puerta" login/app
+  core/theme.dart                    paleta naranja, temas claro y oscuro
+  core/subsonic_client.dart          cliente API (auth, doble dirección, URLs)
+  core/auth_storage.dart             credenciales en el Keystore
+  models/biblioteca.dart             Album, Cancion, Artista, Playlist, Favoritos
+  services/reproductor_handler.dart  motor de audio (just_audio + audio_service)
+  state/sesion_providers.dart        estado de sesión (Riverpod)
+  state/tema_providers.dart          preferencia de tema
+  state/biblioteca_providers.dart    inicio, búsqueda, álbumes y artistas
+  state/favoritos_providers.dart     favoritos (fuente única: getStarred2)
+  state/playlists_providers.dart     playlists y contenido de cada una
+  state/reproductor_providers.dart   cola, progreso, origen de la cola
+  ui/                                pantallas + ui/widgets/ piezas compartidas
+  ui/acciones.dart                   encolar, guardar en playlist, diálogos
 ```
 
 ---

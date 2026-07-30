@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
+import '../services/reproductor_handler.dart';
+import 'reproductor_providers.dart';
 import 'sesion_providers.dart';
 
 /// Las playlists del usuario, tal como las guarda el servidor.
@@ -82,6 +84,15 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
       cancionIds: [for (final c in canciones) c.id],
     );
 
+    // Si es la playlist que está sonando, lo agregado tiene que quedar también
+    // al final de la cola, no recién la próxima vez que se toque reproducir.
+    final handler = _ref.read(reproductorProvider);
+    if (handler.origenCola == origenDePlaylist(playlistId)) {
+      await handler.agregarACola([
+        for (final c in canciones) aMediaItem(c, _cliente),
+      ]);
+    }
+
     // Si la pantalla de esa playlist está abierta detrás, tiene que enterarse.
     _ref.invalidate(cancionesDePlaylistProvider(playlistId));
     await sincronizar();
@@ -161,6 +172,7 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
 
     try {
       await _cliente.quitarDePlaylist(id: playlistId, indices: [indice]);
+      if (_esLaQueSuena) await _handler.quitarDeCola(indice);
       _refrescarLista();
     } catch (_) {
       if (mounted) state = AsyncData(actual);
@@ -182,11 +194,22 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
         id: playlistId,
         cancionIds: [for (final c in nuevo) c.id],
       );
+      if (_esLaQueSuena) await _handler.moverEnCola(desde, hasta);
     } catch (_) {
       if (mounted) state = AsyncData(actual);
       rethrow;
     }
   }
+
+  /// True cuando lo que está sonando salió justamente de esta playlist, y por
+  /// lo tanto la cola es un calco de la lista que se está editando.
+  ///
+  /// Sin este control, reordenar una playlist cualquiera mientras suena otra
+  /// mezclaría la cola equivocada.
+  bool get _esLaQueSuena =>
+      _handler.origenCola == origenDePlaylist(playlistId);
+
+  ReproductorHandler get _handler => _ref.read(reproductorProvider);
 
   /// La cantidad de canciones cambió, así que el listado de playlists quedó
   /// desactualizado.
