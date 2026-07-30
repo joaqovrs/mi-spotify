@@ -107,22 +107,38 @@ Cancion cancionDe(MediaItem item) => Cancion(
   duracion: item.duration?.inSeconds,
 );
 
+/// Etiqueta que identifica a una playlist como origen de la cola.
+///
+/// Es lo que permite que reordenar la playlist que estás escuchando cambie
+/// también lo que viene sonando. Ver [ReproductorHandler.origenCola].
+String origenDePlaylist(String playlistId) => 'playlist:$playlistId';
+
 /// Arranca la reproducción de una lista de canciones desde una posición.
+///
+/// [origen] solo se pasa cuando la cola queda calcada de una lista que después
+/// se puede editar. Cualquier otra reproducción lo deja en null, y así una
+/// edición posterior no toca una cola que ya no le corresponde.
 Future<void> reproducir(
   WidgetRef ref,
   List<Cancion> canciones,
-  int indice,
-) async {
+  int indice, {
+  String? origen,
+}) async {
   final cliente = ref.read(clienteProvider);
   final items = [for (final c in canciones) aMediaItem(c, cliente)];
 
-  await ref.read(reproductorProvider).reproducirLista(items, indice);
+  await ref
+      .read(reproductorProvider)
+      .reproducirLista(items, indice, origen: origen);
 }
 
 /// Reproduce una lista en orden al azar.
 ///
 /// Mezcla una copia y la carga como cola, así el orden aleatorio queda visible
 /// en la cola en vez de ser un estado invisible del reproductor.
+///
+/// A propósito no lleva [origen]: la cola quedó en un orden que ya no es el de
+/// la lista, así que reordenar la lista después no puede aplicarse por índice.
 Future<void> reproducirAleatorio(WidgetRef ref, List<Cancion> canciones) {
   final mezclado = [...canciones]..shuffle();
   return reproducir(ref, mezclado, 0);

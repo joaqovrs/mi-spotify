@@ -185,7 +185,7 @@ class _Contenido extends ConsumerWidget {
                       child: FilledButton.icon(
                         onPressed: canciones.isEmpty
                             ? null
-                            : () => reproducir(ref, canciones, 0),
+                            : () => _reproducirDesde(ref, 0),
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: const Text('Reproducir'),
                       ),
@@ -244,7 +244,7 @@ class _Contenido extends ConsumerWidget {
                 child: FilaCancion(
                   cancion: cancion,
                   sonando: cancion.id == sonandoId,
-                  onTap: () => reproducir(ref, canciones, i),
+                  onTap: () => _reproducirDesde(ref, i),
                   onAgregarACola: () => encolar(context, ref, [cancion]),
                   onGuardarEnPlaylist: () =>
                       agregarAPlaylist(context, ref, [cancion]),
@@ -258,6 +258,17 @@ class _Contenido extends ConsumerWidget {
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 28)),
       ],
+    );
+  }
+
+  /// Reproduce marcando de dónde salió la cola, para que reordenar o quitar
+  /// temas después se aplique también a lo que está sonando.
+  Future<void> _reproducirDesde(WidgetRef ref, int indice) {
+    return reproducir(
+      ref,
+      canciones,
+      indice,
+      origen: origenDePlaylist(playlist.id),
     );
   }
 
