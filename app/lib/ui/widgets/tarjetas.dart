@@ -65,6 +65,8 @@ class FilaCancion extends ConsumerWidget {
     this.onTap,
     this.onAgregarACola,
     this.onAlternarFavorito,
+    this.onGuardarEnPlaylist,
+    this.onQuitarDePlaylist,
     this.sonando = false,
     super.key,
   });
@@ -78,9 +80,19 @@ class FilaCancion extends ConsumerWidget {
   /// Si se pasa, el menú "..." incluye marcar o desmarcar favorito.
   final VoidCallback? onAlternarFavorito;
 
+  /// Si se pasa, el menú "..." abre la hoja para guardar en una playlist.
+  final VoidCallback? onGuardarEnPlaylist;
+
+  /// Solo lo pasa la pantalla de una playlist, que es donde tiene sentido.
+  final VoidCallback? onQuitarDePlaylist;
+
   final bool sonando;
 
-  bool get _tieneMenu => onAgregarACola != null || onAlternarFavorito != null;
+  bool get _tieneMenu =>
+      onAgregarACola != null ||
+      onAlternarFavorito != null ||
+      onGuardarEnPlaylist != null ||
+      onQuitarDePlaylist != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,7 +147,10 @@ class FilaCancion extends ConsumerWidget {
               PopupMenuButton<void>(
                 icon: const Icon(Icons.more_horiz_rounded),
                 tooltip: 'Más opciones',
-                itemBuilder: (context) {
+                // El menú se cierra antes de correr el `onTap`, así que las
+                // acciones usan el contexto de la fila y no el del menú, que
+                // para entonces ya no existe.
+                itemBuilder: (_) {
                   final esFavorito = ref
                       .read(idsFavoritosProvider)
                       .contains(cancion.id);
@@ -173,12 +188,61 @@ class FilaCancion extends ConsumerWidget {
                           ],
                         ),
                       ),
+                    if (onGuardarEnPlaylist != null)
+                      PopupMenuItem<void>(
+                        onTap: onGuardarEnPlaylist,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.playlist_add_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('Guardar en playlist'),
+                          ],
+                        ),
+                      ),
+                    if (onQuitarDePlaylist != null)
+                      PopupMenuItem<void>(
+                        onTap: onQuitarDePlaylist,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.playlist_remove_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('Quitar de la playlist'),
+                          ],
+                        ),
+                      ),
                   ];
                 },
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Fila de playlist. La portada la arma el servidor con los temas que tiene
+/// adentro, así que una playlist vacía cae en el marcador genérico.
+class FilaPlaylist extends StatelessWidget {
+  const FilaPlaylist({required this.playlist, this.onTap, super.key});
+
+  final Playlist playlist;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      leading: Portada(coverArt: playlist.coverArt, lado: 52, radio: 12),
+      title: Text(
+        playlist.nombre,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: textos.titleMedium,
+      ),
+      subtitle: Text(playlist.resumen, style: textos.bodySmall),
+      onTap: onTap,
     );
   }
 }

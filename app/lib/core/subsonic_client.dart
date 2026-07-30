@@ -126,10 +126,14 @@ class SubsonicClient {
   }
 
   /// Arma una URL firmada sobre una dirección concreta.
+  ///
+  /// Los valores de [params] pueden ser un `String` o una `List<String>`.
+  /// Subsonic no usa listas separadas por comas: repite el parámetro
+  /// (`songId=1&songId=2`), y así es como lo escribe `Uri` con una lista.
   Uri _uriEn(
     String baseUrl,
     String endpoint, [
-    Map<String, String> params = const {},
+    Map<String, Object> params = const {},
   ]) {
     return Uri.parse(
       '$baseUrl/rest/$endpoint',
@@ -171,7 +175,7 @@ class SubsonicClient {
   /// la descarta y vuelve a resolver antes de dar el error por definitivo.
   Future<Map<String, dynamic>> _get(
     String endpoint, [
-    Map<String, String> params = const {},
+    Map<String, Object> params = const {},
   ]) async {
     final url = _activa ?? await _resolver();
 
@@ -360,6 +364,105 @@ class SubsonicClient {
     };
 
     await _get(favorito ? 'star' : 'unstar', {parametro: id});
+  }
+
+  // ---------------------------------------------------------------- Playlists
+
+  /// Todas las playlists del usuario.
+  Future<List<Playlist>> playlists() async {
+    final datos = await _get('getPlaylists');
+
+    return _comoLista(datos['playlists'], 'playlist')
+        .map(Playlist.desdeJson)
+        .toList();
+  }
+
+  /// Canciones de una playlist, en el orden guardado.
+  ///
+  /// Subsonic las llama `entry` acá, no `song` como en el resto de la API.
+  Future<List<Cancion>> cancionesDePlaylist(String id) async {
+    final datos = await _get('getPlaylist', {'id': id});
+
+    return _comoLista(datos['playlist'], 'entry').map(Cancion.desdeJson).toList();
+  }
+
+  /// Crea una playlist, opcionalmente con canciones desde el arranque.
+  Future<Playlist> crearPlaylist({
+    required String nombre,
+    List<String> cancionIds = const [],
+  }) async {
+    final datos = await _get('createPlaylist', {
+      'name': nombre,
+      if (cancionIds.isNotEmpty) 'songId': cancionIds,
+    });
+
+    final creada = datos['playlist'];
+    if (creada is Map) {
+      return Playlist.desdeJson(Map<String, dynamic>.from(creada));
+    }
+
+    // La especificación permite contestar sin cuerpo. Como necesitamos el id
+    // para poder abrirla, en ese caso la rescatamos del listado por nombre.
+    final todas = await playlists();
+    final coincidencias = todas.where((p) => p.nombre == nombre);
+    if (coincidencias.isEmpty) {
+      throw const SubsonicException(
+        'La playlist se creó pero el servidor no devolvió su identificador.',
+        codigo: -1,
+      );
+    }
+
+    return coincidencias.last;
+  }
+
+  Future<void> renombrarPlaylist({
+    required String id,
+    required String nombre,
+  }) async {
+    await _get('updatePlaylist', {'playlistId': id, 'name': nombre});
+  }
+
+  /// Suma canciones al final de la playlist.
+  Future<void> agregarAPlaylist({
+    required String id,
+    required List<String> cancionIds,
+  }) async {
+    if (cancionIds.isEmpty) return;
+
+    await _get('updatePlaylist', {
+      'playlistId': id,
+      'songIdToAdd': cancionIds,
+    });
+  }
+
+  /// Quita canciones **por posición**, no por id: una misma canción puede estar
+  /// repetida en la playlist y hay que poder sacar solo la que se tocó.
+  Future<void> quitarDePlaylist({
+    required String id,
+    required List<int> indices,
+  }) async {
+    if (indices.isEmpty) return;
+
+    await _get('updatePlaylist', {
+      'playlistId': id,
+      'songIndexToRemove': [for (final indice in indices) '$indice'],
+    });
+  }
+
+  /// Reescribe el contenido completo en el orden dado.
+  ///
+  /// `updatePlaylist` solo sabe agregar al final y quitar por índice, así que
+  /// reordenar exige mandar la lista entera. `createPlaylist` con un
+  /// `playlistId` existente es la vía que deja Subsonic para eso.
+  Future<void> reemplazarCancionesDePlaylist({
+    required String id,
+    required List<String> cancionIds,
+  }) async {
+    await _get('createPlaylist', {'playlistId': id, 'songId': cancionIds});
+  }
+
+  Future<void> borrarPlaylist(String id) async {
+    await _get('deletePlaylist', {'id': id});
   }
 
   /// Busca en toda la biblioteca: canciones, álbumes y artistas de una vez.

@@ -205,6 +205,8 @@ class _PestanaCanciones extends ConsumerWidget {
               // La cola pasa a ser la lista entera, arrancando en la que tocó.
               onTap: () => reproducir(ref, canciones, i),
               onAgregarACola: () => encolar(context, ref, [canciones[i]]),
+              onGuardarEnPlaylist: () =>
+                  agregarAPlaylist(context, ref, [canciones[i]]),
               onAlternarFavorito: () => ref
                   .read(favoritosProvider.notifier)
                   .alternarCancion(canciones[i]),

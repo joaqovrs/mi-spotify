@@ -139,6 +139,8 @@ class _Resultados extends ConsumerWidget {
                   onTap: () => reproducir(ref, resultado.canciones, i),
                   onAgregarACola: () =>
                       encolar(context, ref, [resultado.canciones[i]]),
+                  onGuardarEnPlaylist: () =>
+                      agregarAPlaylist(context, ref, [resultado.canciones[i]]),
                   onAlternarFavorito: () => ref
                       .read(favoritosProvider.notifier)
                       .alternarCancion(resultado.canciones[i]),

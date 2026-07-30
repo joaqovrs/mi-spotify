@@ -148,6 +148,66 @@ class Favoritos {
   }
 }
 
+/// Una playlist del servidor.
+///
+/// A diferencia de los favoritos, el orden importa: es lo que distingue una
+/// playlist de una bolsa de canciones marcadas. Subsonic lo guarda por
+/// posición, así que todas las operaciones de edición hablan de índices.
+class Playlist {
+  const Playlist({
+    required this.id,
+    required this.nombre,
+    this.comentario,
+    this.coverArt,
+    this.cantidadCanciones,
+    this.duracion,
+  });
+
+  final String id;
+  final String nombre;
+  final String? comentario;
+  final String? coverArt;
+  final int? cantidadCanciones;
+
+  /// Duración total en segundos.
+  final int? duracion;
+
+  factory Playlist.desdeJson(Map<String, dynamic> json) {
+    return Playlist(
+      id: '${json['id']}',
+      nombre: json['name'] as String? ?? 'Sin nombre',
+      comentario: json['comment'] as String?,
+      coverArt: json['coverArt'] as String?,
+      cantidadCanciones: json['songCount'] as int?,
+      duracion: json['duration'] as int?,
+    );
+  }
+
+  /// `12 canciones · 48 min`, para el subtítulo de la fila y de la pantalla.
+  ///
+  /// Omite la duración cuando el servidor no la informa (una playlist recién
+  /// creada, todavía vacía) en vez de mostrar un `0 min` que confunde.
+  String get resumen {
+    final cantidad = cantidadCanciones ?? 0;
+    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
+
+    final total = duracion;
+    if (total == null || total <= 0) return temas;
+
+    final minutos = (total / 60).round();
+    return '$temas · $minutos min';
+  }
+
+  Playlist copiarCon({String? nombre}) => Playlist(
+    id: id,
+    nombre: nombre ?? this.nombre,
+    comentario: comentario,
+    coverArt: coverArt,
+    cantidadCanciones: cantidadCanciones,
+    duracion: duracion,
+  );
+}
+
 class Artista {
   const Artista({
     required this.id,

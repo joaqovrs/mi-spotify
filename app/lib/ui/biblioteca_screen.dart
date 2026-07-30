@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import '../state/favoritos_providers.dart';
+import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
 import 'album_screen.dart';
 import 'artista_screen.dart';
+import 'playlist_screen.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
-/// Tu biblioteca: todo lo que marcaste con el corazón.
+/// Tu biblioteca: tus playlists y todo lo que marcaste con el corazón.
 class BibliotecaScreen extends ConsumerWidget {
   const BibliotecaScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textos = Theme.of(context).textTheme;
-    final asincrono = ref.watch(favoritosProvider);
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -33,8 +35,10 @@ class BibliotecaScreen extends ConsumerWidget {
                     const Spacer(),
                     IconButton(
                       tooltip: 'Actualizar',
-                      onPressed: () =>
-                          ref.read(favoritosProvider.notifier).cargar(),
+                      onPressed: () {
+                        ref.read(favoritosProvider.notifier).cargar();
+                        ref.read(playlistsProvider.notifier).cargar();
+                      },
                       icon: const Icon(Icons.refresh_rounded),
                     ),
                   ],
@@ -46,26 +50,22 @@ class BibliotecaScreen extends ConsumerWidget {
                 indicatorSize: TabBarIndicatorSize.label,
                 dividerColor: Colors.transparent,
                 tabs: [
+                  Tab(text: 'Playlists'),
                   Tab(text: 'Canciones'),
                   Tab(text: 'Álbumes'),
                   Tab(text: 'Artistas'),
                 ],
               ),
-              Expanded(
-                child: asincrono.when(
-                  loading: () => const EstadoCargando(alto: 240),
-                  error: (e, _) => EstadoError(
-                    error: e,
-                    onReintentar: () =>
-                        ref.read(favoritosProvider.notifier).cargar(),
-                  ),
-                  data: (favoritos) => TabBarView(
-                    children: [
-                      _Canciones(favoritos.canciones),
-                      _Albumes(favoritos.albumes),
-                      _Artistas(favoritos.artistas),
-                    ],
-                  ),
+              const Expanded(
+                child: TabBarView(
+                  children: [
+                    _Playlists(),
+                    // Los tres favoritos salen de una sola consulta, así que
+                    // cada pestaña se sirve de la misma respuesta.
+                    _DesdeFavoritos(_Canciones.desde),
+                    _DesdeFavoritos(_Albumes.desde),
+                    _DesdeFavoritos(_Artistas.desde),
+                  ],
                 ),
               ),
             ],
@@ -76,8 +76,107 @@ class BibliotecaScreen extends ConsumerWidget {
   }
 }
 
+// ------------------------------------------------------------------ Playlists
+
+class _Playlists extends ConsumerWidget {
+  const _Playlists();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asincrono = ref.watch(playlistsProvider);
+    final textos = Theme.of(context).textTheme;
+
+    final nueva = ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+      leading: const Icon(Icons.add_rounded),
+      title: Text('Nueva playlist', style: textos.titleMedium),
+      onTap: () => _crear(context, ref),
+    );
+
+    return asincrono.when(
+      loading: () => const EstadoCargando(alto: 240),
+      error: (e, _) => EstadoError(
+        error: e,
+        onReintentar: () => ref.read(playlistsProvider.notifier).cargar(),
+      ),
+      data: (playlists) => ListView(
+        padding: const EdgeInsets.only(top: 8, bottom: 28),
+        children: [
+          nueva,
+          if (playlists.isEmpty)
+            const EstadoVacio(
+              mensaje: 'Todavía no tenés playlists.',
+              icono: Icons.queue_music_rounded,
+            )
+          else
+            for (final playlist in playlists)
+              FilaPlaylist(
+                playlist: playlist,
+                onTap: () => _abrir(context, playlist),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _crear(BuildContext context, WidgetRef ref) async {
+    final nombre = await pedirNombrePlaylist(
+      context,
+      titulo: 'Nueva playlist',
+      aceptar: 'Crear',
+    );
+    if (nombre == null || !context.mounted) return;
+
+    final mensajero = ScaffoldMessenger.of(context);
+
+    try {
+      final creada = await ref
+          .read(playlistsProvider.notifier)
+          .crear(nombre: nombre);
+
+      // Se abre recién creada: es lo que uno quiere hacer a continuación.
+      if (context.mounted) _abrir(context, creada);
+    } on SubsonicException catch (e) {
+      avisar(mensajero, e.mensaje);
+    } catch (_) {
+      avisar(mensajero, 'No se pudo crear la playlist.');
+    }
+  }
+
+  void _abrir(BuildContext context, Playlist playlist) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => PlaylistScreen(playlist: playlist)),
+    );
+  }
+}
+
+// ------------------------------------------------------------------ Favoritos
+
+/// Envoltorio que resuelve la carga de favoritos una sola vez por pestaña.
+class _DesdeFavoritos extends ConsumerWidget {
+  const _DesdeFavoritos(this.contenido);
+
+  final Widget Function(Favoritos) contenido;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref
+        .watch(favoritosProvider)
+        .when(
+          loading: () => const EstadoCargando(alto: 240),
+          error: (e, _) => EstadoError(
+            error: e,
+            onReintentar: () => ref.read(favoritosProvider.notifier).cargar(),
+          ),
+          data: contenido,
+        );
+  }
+}
+
 class _Canciones extends ConsumerWidget {
   const _Canciones(this.canciones);
+
+  static Widget desde(Favoritos favoritos) => _Canciones(favoritos.canciones);
 
   final List<Cancion> canciones;
 
@@ -100,6 +199,8 @@ class _Canciones extends ConsumerWidget {
         sonando: canciones[i].id == sonandoId,
         onTap: () => reproducir(ref, canciones, i),
         onAgregarACola: () => encolar(context, ref, [canciones[i]]),
+        onGuardarEnPlaylist: () =>
+            agregarAPlaylist(context, ref, [canciones[i]]),
       ),
     );
   }
@@ -107,6 +208,8 @@ class _Canciones extends ConsumerWidget {
 
 class _Albumes extends StatelessWidget {
   const _Albumes(this.albumes);
+
+  static Widget desde(Favoritos favoritos) => _Albumes(favoritos.albumes);
 
   final List<Album> albumes;
 
@@ -143,6 +246,8 @@ class _Albumes extends StatelessWidget {
 
 class _Artistas extends StatelessWidget {
   const _Artistas(this.artistas);
+
+  static Widget desde(Favoritos favoritos) => _Artistas(favoritos.artistas);
 
   final List<Artista> artistas;
 
