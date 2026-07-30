@@ -41,7 +41,7 @@ class AlbumScreen extends ConsumerWidget {
           if (canciones.isNotEmpty)
             PopupMenuButton<void>(
               tooltip: 'Más opciones',
-              itemBuilder: (context) => [
+              itemBuilder: (_) => [
                 PopupMenuItem<void>(
                   onTap: () => encolar(context, ref, canciones),
                   child: const Row(
@@ -49,6 +49,16 @@ class AlbumScreen extends ConsumerWidget {
                       Icon(Icons.queue_music_rounded, size: 20),
                       SizedBox(width: 12),
                       Text('Agregar álbum a la cola'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<void>(
+                  onTap: () => agregarAPlaylist(context, ref, canciones),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.playlist_add_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Guardar álbum en playlist'),
                     ],
                   ),
                 ),
@@ -124,6 +134,8 @@ class AlbumScreen extends ConsumerWidget {
                   onTap: () => reproducir(ref, canciones, i),
                   onAgregarACola: () =>
                       encolar(context, ref, [canciones[i]]),
+                  onGuardarEnPlaylist: () =>
+                      agregarAPlaylist(context, ref, [canciones[i]]),
                   onAlternarFavorito: () => ref
                       .read(favoritosProvider.notifier)
                       .alternarCancion(canciones[i]),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
+import 'acciones.dart';
 import 'widgets/boton_favorito.dart';
 import 'widgets/portada.dart';
 
@@ -33,6 +34,24 @@ class ReproductorScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Reproduciendo'),
+        actions: [
+          PopupMenuButton<void>(
+            tooltip: 'Más opciones',
+            itemBuilder: (_) => [
+              PopupMenuItem<void>(
+                onTap: () =>
+                    agregarAPlaylist(context, ref, [cancionDe(cancion)]),
+                child: const Row(
+                  children: [
+                    Icon(Icons.playlist_add_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text('Guardar en playlist'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
