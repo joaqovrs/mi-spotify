@@ -11,33 +11,26 @@ Reemplazar Spotify con una biblioteca propia servida desde casa y escuchable des
 - **Dispositivo de escucha:** Android
 - **Servidor OS:** Linux en la laptop antigua (**Debian 13 "trixie" amd64, con escritorio GNOME**)
 - **Backend:** **Navidrome** (servidor de música, expone la API Subsonic) — no se programa backend propio
-- **Acceso remoto:** 🔄 **en migración (30-07-2026).** Hoy anda por **Tailscale**; se pasa a
-  **puertos abiertos en el router + DDNS**. Decisión del usuario: es una app privada, ya abrió
-  puertos antes y prefiere no depender de una VPN. Plan completo en **Fase 5**.
+- **Acceso remoto:** ✅ **puertos abiertos en el router + DDNS** (30-07-2026). Se dejó Tailscale.
+  Decisión del usuario: es una app privada, ya abrió puertos antes y prefiere no depender de una
+  VPN ni de que la otra persona instale nada. Dominio `mimusic.duckdns.org`, puerto externo
+  `34533`. Detalle en **Fase 5**.
 - **App:** **Flutter** (APK nativo Android) que consume la API Subsonic
 
 ## Arquitectura
 
-**Hoy (Tailscale, funcionando):**
 ```
-Laptop vieja (Linux Debian)                                   Teléfono Android
-┌─────────────────────────┐    Tailscale (VPN cifrada)    ┌──────────────────┐
-│ Navidrome  (:4533)       │◄────── internet ─────────────►│ App Flutter      │
-│ Carpeta música /srv/musica│                              │ Tailscale ON     │
-│ Tailscale                │   API Subsonic (REST)         └──────────────────┘
-└─────────────────────────┘
+Laptop vieja (Linux Debian)          Router 192.168.1.1             Teléfono Android
+┌──────────────────────────┐      ┌────────────────────┐        ┌──────────────────┐
+│ Navidrome  (:4533)        │◄────┤ port forward        │◄internet┤ App Flutter      │
+│ Carpeta música /srv/musica│      │ WAN:34533 → :4533   │        │ (sin VPN)        │
+│ IP fija 192.168.1.194     │      └────────────────────┘        └──────────────────┘
+│ cron duck.sh cada 5 min ──┼──────► DuckDNS ──► mimusic.duckdns.org
+└──────────────────────────┘
 ```
 
-**Adonde va (puertos abiertos + DDNS) — ver Fase 5:**
-```
-Laptop vieja (Linux Debian)        Router 192.168.1.1              Teléfono Android
-┌─────────────────────────┐      ┌──────────────────┐          ┌──────────────────┐
-│ Navidrome  (:4533)       │◄────┤ port forward      │◄─internet─┤ App Flutter      │
-│ Carpeta música /srv/musica│     │ WAN:puerto → :4533│           │ (sin VPN)        │
-│ IP local fija (reserva)  │      │ cliente DDNS      │          └──────────────────┘
-└─────────────────────────┘      └──────────────────┘
-                                  casa.duckdns.org
-```
+El cliente DDNS **no corre en el router** (este HGU no tiene esa función): es un script con `cron`
+en la propia Debian. Ver Fase 5.
 
 ## Hardware del servidor (confirmado)
 - Laptop antigua: **8 GB RAM**, CPU **64 bits** → distro: **Debian 13 amd64** (netinst, escritorio GNOME).
@@ -71,31 +64,39 @@ Laptop vieja (Linux Debian)        Router 192.168.1.1              Teléfono And
   buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos, playlists con crear,
   editar y borrar, y **descargas offline** (probado OK el 30-07-2026: se descarga, se ve la pestaña
   con carátulas y reproduce sin servidor). Detalle en la sección Fase 4.
-- 🔄 **Fase 5 en curso (30-07-2026):** migrar el acceso remoto de Tailscale a **puertos abiertos
-  en el router + DDNS**. Nada empezado todavía. Plan paso a paso en la sección Fase 5.
+- ✅ **Fase 5 completa (30-07-2026):** acceso remoto migrado de Tailscale a **puerto abierto +
+  DDNS**. Sin CGNAT (confirmado por `traceroute`), IP local fija `192.168.1.194`, port forward
+  `WAN:34533 → 192.168.1.194:4533`, dominio **`mimusic.duckdns.org`** actualizado por `cron` cada
+  5 minutos, y **Tailscale bajado**. Probado desde el teléfono con WiFi apagado. Detalle y trampas
+  en la sección Fase 5.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
 |---|---|
 | **PR de descargas offline** | Rama `feat/descargas-offline` **pusheada pero sin mergear** (commit `bc177fc`). El PR no se creó porque `gh` no está instalado en el Windows: hay que abrirlo a mano. |
 | **Resto de la música** | Subir por WinSCP a `/srv/musica`, estructura `Artista/Álbum/`. |
-| **Reserva DHCP** | ⬆️ **Ahora obligatorio** (Fase 5, paso 1): el port forward apunta a una IP interna fija. Atar `192.168.1.194` a la MAC `d8-c0-a6-85-a6-a5` en `192.168.1.1`. |
+| **Dirección remota en la app** | Cambiar el campo remoto de `http://100.91.22.33:4533` a `http://mimusic.duckdns.org:34533`. No es cambio de código: se edita al iniciar sesión. |
 | **Cable de red** | La laptop está por WiFi (`wlp1s0`); ethernet sería más estable para 24/7. |
+| **Token de DuckDNS expuesto** | El token quedó a la vista en una captura. El usuario decidió **no regenerarlo** (30-07-2026). Si algún día se recrea, hay que actualizar `~/duckdns/duck.sh`. |
 
 ### Datos del servidor
 | Dato | Valor |
 |---|---|
 | Hostname | `mi-spotify` |
 | Usuario | `mi-spotify` |
-| IP local | `192.168.1.194` (⚠️ **DHCP dinámica** — reserva pendiente, ahora obligatoria) |
-| MAC | `d8-c0-a6-85-a6-a5` (la que hay que atar en la reserva DHCP) |
-| Interfaz | `wlp1s0` (WiFi; el cable sería más estable para 24/7) |
-| Router | `192.168.1.1` |
+| IP local | `192.168.1.194` — **fija, configurada en la Debian** (no reserva DHCP: el router no la ofrece) |
+| Rango DHCP del router | `192.168.1.81` – `192.168.1.193` — se achicó de `.198` a `.193` para dejar `.194` fuera |
+| DNS | `1.1.1.1` / `8.8.8.8` (puestos a mano en NetworkManager; ver trampa en Fase 5) |
+| MAC | `d8-c0-a6-85-a6-a5` |
+| Interfaz | `wlp1s0` (WiFi, conexión NetworkManager llamada `Joaco`) |
+| Router | `192.168.1.1` (HGU con menú `Puertos` y `Red local`; **sin** reserva DHCP ni cliente DDNS) |
 | Acceso | `ssh mi-spotify@192.168.1.194` desde Windows |
-| IP Tailscale (tailnet) | `100.91.22.33` — **en salida** (ver Fase 5); sigue funcionando por ahora |
+| IP pública (dinámica) | `181.162.130.129` al 30-07-2026 — por eso el DDNS |
+| Dominio DDNS | **`mimusic.duckdns.org`** (cuenta DuckDNS gratis) |
+| Puerto externo | `34533` → interno `4533` (TCP) |
 | Navidrome (red local) | `http://192.168.1.194:4533` |
-| Navidrome (remoto, hoy) | `http://100.91.22.33:4533` |
-| Navidrome (remoto, futuro) | `http://<dominio-ddns>:<puerto>` — **a definir en Fase 5** |
+| Navidrome (remoto) | **`http://mimusic.duckdns.org:34533`** |
+| Tailscale | ❌ dado de baja (`tailscale down`). IP vieja del tailnet: `100.91.22.33` |
 | Repo en el servidor | `~/mi-spotify` (deploy key SSH, solo lectura) |
 
 ## Flujo de trabajo (CI/CD)
@@ -130,7 +131,7 @@ rama nueva → commit → push → Pull Request → CI verde ✅ → merge → b
 Los pasos 1–5 se completaron sin hardware; es el tope de lo posible antes de tener el servidor.
 
 ## Costo
-Todo el software es gratuito (Debian, Navidrome, Tailscale free, Flutter). Único costo real:
+Todo el software es gratuito (Debian, Navidrome, DuckDNS, Flutter). Único costo real:
 electricidad de la laptop encendida 24/7. No se paga dominio ni IP fija.
 
 ---
@@ -234,7 +235,7 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 #### Decisiones de diseño
 - Referencia visual: mucho aire, fondo blanco, tipografía pesada en títulos, tarjetas muy redondeadas.
 - **Acento naranja** `#FF6B2C`. Tema claro + oscuro + seguir al sistema.
-- **Poppins empaquetada en el APK** (no por CDN): la app tiene que verse igual conectada solo al tailnet.
+- **Poppins empaquetada en el APK** (no por CDN): la app tiene que verse igual sin salida a internet.
 - **Textos en español.**
 - **Nada de datos falsos.** Navidrome es de un solo usuario y privado: no hay éxitos globales, ni
   listas curadas, ni playlists colaborativas. Esas secciones se reemplazan por equivalentes reales
@@ -246,7 +247,9 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 - `<uses-permission android:name="android.permission.INTERNET"/>` — Flutter lo agrega solo en debug;
   sin esto el APK de **release** queda sin red.
 - `android:usesCleartextTraffic="true"` — Android 9+ bloquea HTTP sin cifrar y Navidrome es `http://`
-  puro. No es riesgo: el tráfico ya va cifrado dentro del túnel de Tailscale.
+  puro. ⚠️ **Desde la Fase 5 ya no hay túnel de Tailscale que lo cubra:** el tráfico (contraseña
+  incluida) viaja en texto plano por internet. Asumido por el usuario; se arregla poniendo HTTPS
+  con un proxy inverso, anotado como mejora opcional en Fase 5.
 
 #### Etapas
 | # | Qué | Estado |
@@ -294,7 +297,7 @@ ahora es un **interruptor de ícono solo**, discreto, que se deja puesto:
   entrega el índice de destino compensado por el hueco del elemento arrastrado.
 
 **Descargas offline (etapa 7):** el objetivo es que la app siga sirviendo con el servidor apagado
-o sin Tailscale. Decisiones:
+o sin red. Decisiones:
 
 - Los archivos van al **almacenamiento privado de la app** (`getApplicationSupportDirectory`): no
   pide ningún permiso de Android, no aparecen en la galería ni en el reproductor del sistema, y se
@@ -342,8 +345,11 @@ incoherencias (desmarcás algo y el listado viejo lo sigue mostrando lleno). Com
 son únicos entre tipos, un solo conjunto de ids alcanza para todos los corazones. El toque actualiza
 la pantalla primero y confirma contra el servidor después; si falla, revierte solo.
 
-**Doble dirección (etapa 1):** el cliente guarda la IP local y la del tailnet y descubre sola cuál
-responde — sonda la local con timeout corto (1,8 s) y cae a la remota si no contesta. Si la activa
+**Doble dirección (etapa 1):** el cliente guarda la dirección local y la remota y descubre sola cuál
+responde — sonda la local con timeout corto (1,8 s) y cae a la remota si no contesta. ⚠️ La remota
+se guarda en el teléfono al iniciar sesión: **cambiar el acceso remoto del servidor no se propaga
+solo**. Tras la Fase 5 hay que reemplazar a mano `http://100.91.22.33:4533` por
+`http://mimusic.duckdns.org:34533`, o la app anda por WiFi y falla con datos móviles. Si la activa
 se cae a mitad de uso, la descarta y vuelve a resolver, así salir de casa con la app abierta no la
 rompe. Si el servidor **contesta pero rechaza** (contraseña mal), corta ahí en vez de seguir probando.
 
@@ -371,46 +377,94 @@ app/lib/
   ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
 ```
 
-### Fase 5 — Acceso remoto por puertos abiertos 🔄 EN CURSO (30-07-2026)
+### Fase 5 — Acceso remoto por puertos abiertos ✅ COMPLETA (30-07-2026)
 
 **Decisión del usuario (30-07-2026): se deja Tailscale y se pasa a abrir puertos en el router.**
 Motivo: es una app privada, ya abrió puertos antes sin problemas y prefiere no depender de una VPN
 ni de que la otra persona tenga que instalar nada. **La decisión está tomada y reafirmada — no hace
 falta volver a discutirla ni advertir sobre ella.**
 
-Nada empezado todavía. Pasos en orden:
+Lo ejecutado, en orden:
 
-**Paso 0 — Confirmar que el ISP no usa CGNAT.** Es lo primero porque, si hay CGNAT, abrir puertos
-directamente **no puede funcionar** y hay que buscar otro camino (pedirle IP pública al ISP, o un
-túnel). Cómo se chequea: mirar la **IP WAN que muestra el router** (`192.168.1.1`) y compararla con
-la que devuelve `curl -4 ifconfig.me` desde la Debian.
-- Si son **iguales** → hay IP pública, se puede seguir.
-- Si **difieren**, o la del router arranca con `100.64.` – `100.127.` → hay CGNAT.
+**Paso 0 — Confirmar que el ISP no usa CGNAT.** Va primero porque con CGNAT abrir puertos
+**no puede funcionar**. Se intentó comparar la IP WAN del router con `curl -4 ifconfig.me`, pero
+**este HGU no muestra la IP WAN en ninguna pantalla**. Se resolvió con `traceroute`, que responde
+lo mismo sin depender del router:
 
-**Paso 1 — Reserva DHCP para la Debian.** Ya estaba anotado como pendiente; ahora es obligatorio,
-porque el port forward apunta a una IP interna fija. En `192.168.1.1`, atar `192.168.1.194` a la
-MAC `d8-c0-a6-85-a6-a5`.
+```bash
+curl -4 https://ifconfig.me; echo      # → 181.162.130.129   (el `echo` hace falta: no manda \n)
+traceroute -n -m 5 8.8.8.8
+```
 
-**Paso 2 — Port forward en el router.** Regla: `WAN:<puerto> → 192.168.1.194:4533` (TCP). El puerto
-externo puede ser distinto del interno.
+El veredicto está en el **salto 2**: salió `181.162.128.1`, una IP **pública del mismo bloque** que
+la propia → el router tiene la IP pública puesta en su WAN, no hay CGNAT. ⚠️ Los `10.50.3.x` de los
+saltos 3 y 4 **no son CGNAT**: son el backbone interno del ISP y aparecen *después* de la IP
+pública. CGNAT sería un `100.64.x` – `100.127.x` **en el salto 2**.
 
-**Paso 3 — DDNS**, porque la IP pública de casa es dinámica y si cambia la app deja de conectar.
-Opciones gratis: **DuckDNS** o **No-IP**. Se puede usar el cliente DDNS que traiga el router o
-correr uno en la Debian (contenedor o cron). Queda algo tipo `casa.duckdns.org`.
+**Paso 1 — IP local fija.** El plan decía "reserva DHCP", pero **este router no tiene esa función**
+(la pantalla *Red local* solo permite editar el rango). Se hizo al revés, y queda mejor porque no
+depende del router:
+
+1. En el router, achicar el rango: *Dirección IP fin rango* de `192.168.1.198` a **`192.168.1.193`**,
+   para que `.194` quede fuera de lo que el DHCP reparte y nadie la reciba por accidente.
+2. En la Debian, IP manual por **Configuración → Wi-Fi → ⚙ → IPv4 → Manual**: `192.168.1.194`,
+   máscara `255.255.255.0`, puerta `192.168.1.1`. La tabla de GNOME muestra **una fila extra en
+   blanco** (para una segunda IP) — hay que dejarla vacía o el botón *Aplicar* no se habilita.
+
+**Paso 2 — Port forward.** Menú **Puertos** del router: TCP, externo **`34533`** → `192.168.1.194`
+interno **`4533`**. El puerto externo se eligió distinto y alto a propósito: `4533` es conocido y
+lo barren los escáneres automáticos.
+
+**Paso 3 — DDNS.** La IP pública es dinámica, así que hace falta un nombre fijo. El router **no
+trae cliente DDNS**, así que corre en la Debian. Dominio **`mimusic.duckdns.org`** (DuckDNS, gratis):
+
+```bash
+mkdir -p ~/duckdns
+cat > ~/duckdns/duck.sh <<'EOF'
+echo url="https://www.duckdns.org/update?domains=mimusic&token=<TOKEN>&ip=" | curl -k -o ~/duckdns/duck.log -K -
+EOF
+chmod 700 ~/duckdns/duck.sh
+~/duckdns/duck.sh && cat ~/duckdns/duck.log     # → OK
+crontab -e   # */5 * * * * ~/duckdns/duck.sh >/dev/null 2>&1
+```
+
+En `domains=` va **solo el subdominio**, sin `.duckdns.org`. El `&ip=` vacío no es un error: le
+dice a DuckDNS que use la IP desde la que llega el pedido.
 
 **Paso 4 — Cambiar la dirección en la app.** ✅ **No hace falta tocar código.** La app ya guarda dos
-direcciones (local y remota) y sonda cuál responde; solo hay que poner en el campo remoto
-`http://casa.duckdns.org:<puerto>` en vez de `http://100.91.22.33:4533`. El manifiesto ya trae
-`usesCleartextTraffic="true"`, así que HTTP plano funciona sin cambios.
+direcciones y sonda cuál responde; solo se pone en el campo remoto
+`http://mimusic.duckdns.org:34533`. El manifiesto ya trae `usesCleartextTraffic="true"`.
 
-**Paso 5 — Verificar** desde el teléfono con **WiFi apagado** (solo datos móviles) y **Tailscale
-apagado**: `http://casa.duckdns.org:<puerto>` tiene que cargar Navidrome, y después la app.
+**Paso 5 — Verificado** desde el teléfono con WiFi y Tailscale apagados: Navidrome carga por
+`http://181.162.130.129:34533` y por el dominio.
 
-**Paso 6 — Qué hacer con Tailscale.** Conviene **dejarlo instalado hasta terminar** de verificar,
-como camino de vuelta si algo no responde. Una vez andando se puede `sudo tailscale down` (o
-desinstalar) y sacar la máquina del tailnet en `login.tailscale.com`.
+**Paso 6 — Tailscale dado de baja** con `sudo tailscale down`. Para que no vuelva solo tras un
+reinicio: `sudo systemctl disable --now tailscaled`.
 
-Mejoras opcionales una vez que ande:
+#### ⚠️ Trampa que costó una hora: Tailscale se queda con el DNS
+
+Al bajar Tailscale la Debian dejó de resolver nombres (`curl: (6) Could not resolve host`), aunque
+`ping 1.1.1.1` seguía andando — señal inequívoca de que lo roto es el DNS, no la conexión.
+
+Son **dos causas encadenadas**:
+
+1. Tailscale había reescrito `/etc/resolv.conf` con su MagicDNS (`nameserver 100.100.100.100`), y
+   el archivo lo declara en el encabezado: `# Generated by tailscale`.
+2. Al pasar la interfaz a **IPv4 manual**, NetworkManager se quedó **sin ningún DNS que escribir**:
+   `resolv.conf` volvió a ser suyo pero quedó de 30 bytes, solo el comentario, sin `nameserver`.
+
+Arreglo (fijate que el `NAME` de la conexión es el del WiFi, acá `Joaco`):
+
+```bash
+CON=$(nmcli -t -f NAME,DEVICE connection show --active | grep ':wlp1s0$' | cut -d: -f1)
+sudo nmcli connection modify "$CON" ipv4.dns "1.1.1.1,8.8.8.8" ipv4.ignore-auto-dns yes
+sudo nmcli device reapply wlp1s0      # `reapply` NO corta el SSH; `connection up` sí
+```
+
+**Moraleja:** al poner IP manual, el DNS **no se hereda** — hay que cargarlo explícitamente en el
+mismo paso, o la máquina queda con internet pero sin poder resolver un solo nombre.
+
+Mejoras opcionales:
 - **HTTPS** con un proxy inverso (Caddy saca el certificado solo) sobre el dominio DDNS, para que
   la contraseña no viaje en texto plano. Requiere abrir también el 80/443 para el desafío ACME.
 - **Fail2ban** sobre el log de Navidrome contra intentos de login repetidos.
@@ -436,12 +490,14 @@ Si llega a molestar, se arregla con un cartelito de "compartida por X" en `FilaP
 
 ## Orden de ejecución
 Fase 1 → Fase 2 → probar Navidrome en navegador local → Fase 3 → probar acceso remoto en
-navegador (otra red) → Fase 4 → **Fase 5 (migración a puertos)**. Las fases 1 a 4 están hechas.
+navegador (otra red) → Fase 4 → Fase 5 (migración a puertos). **Las cinco fases están hechas.**
+La Fase 3 (Tailscale) quedó reemplazada por la Fase 5; se deja documentada por si hiciera falta
+volver atrás.
 
 ## Verificación end-to-end
 1. `http://localhost:4533` en la laptop y `http://ip-local:4533` desde Windows reproducen en la red local.
-2. Con el teléfono en otra red, la dirección remota carga Navidrome (hoy el tailnet; tras la Fase 5,
-   el dominio DDNS con el puerto abierto, y **sin Tailscale**).
+2. Con el teléfono en otra red (datos móviles, **sin Tailscale**),
+   `http://mimusic.duckdns.org:34533` carga Navidrome.
 3. App: login valida con `ping`; reproduce en streaming; controles en notificación; funciona fuera de casa.
 4. Descargas: bajar un álbum, cortar la red y verificar que la pestaña Descargas se ve con carátulas
    y reproduce.
@@ -450,7 +506,9 @@ navegador (otra red) → Fase 4 → **Fase 5 (migración a puertos)**. Las fases
 ## Notas
 - La música la aporta el usuario (archivos en `/srv/musica`). Navidrome no descarga música.
 - Backups: respaldar la carpeta `data` de Navidrome y la carpeta de música.
-- Exposición: hoy Navidrome solo lo ven los dispositivos del tailnet. Tras la **Fase 5** queda
-  publicado en internet detrás del puerto abierto del router; el control de acceso pasa a ser el
-  login de Navidrome. Decisión tomada y reafirmada por el usuario — está asumido, no hace falta
-  volver sobre el tema.
+- Exposición: desde la **Fase 5** Navidrome está publicado en internet detrás del puerto `34533`
+  del router; el control de acceso es el login de Navidrome. Decisión tomada y reafirmada por el
+  usuario — está asumido, no hace falta volver sobre el tema.
+- Si algún día el acceso remoto deja de andar de golpe, el sospechoso número uno es **la IP pública
+  cambió y el `cron` de DuckDNS no corrió**. Se chequea con `cat ~/duckdns/duck.log` (tiene que
+  decir `OK`) y `getent hosts mimusic.duckdns.org` contra `curl -4 ifconfig.me; echo`.
