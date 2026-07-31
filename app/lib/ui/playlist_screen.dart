@@ -7,6 +7,8 @@ import '../state/favoritos_providers.dart';
 import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'acciones_descarga.dart';
+import 'avisos.dart';
 import 'widgets/boton_aleatorio.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
@@ -45,7 +47,7 @@ class PlaylistScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (canciones.isNotEmpty)
+              if (canciones.isNotEmpty) ...[
                 PopupMenuItem<void>(
                   onTap: () => encolar(context, ref, canciones),
                   child: const Row(
@@ -56,6 +58,17 @@ class PlaylistScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                PopupMenuItem<void>(
+                  onTap: () => descargar(context, ref, canciones),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.download_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Descargar playlist'),
+                    ],
+                  ),
+                ),
+              ],
               PopupMenuItem<void>(
                 onTap: () => _borrar(context, ref, actual),
                 child: const Row(

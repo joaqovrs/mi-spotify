@@ -48,6 +48,7 @@ class Cancion {
     this.albumId,
     this.coverArt,
     this.duracion,
+    this.sufijo,
   });
 
   final String id;
@@ -60,6 +61,11 @@ class Cancion {
   /// Duración en segundos.
   final int? duracion;
 
+  /// Extensión del archivo original en el servidor (`mp3`, `flac`, `m4a`).
+  /// Se usa al descargar, para que el archivo local conserve su formato en el
+  /// nombre y el reproductor no tenga que adivinarlo.
+  final String? sufijo;
+
   factory Cancion.desdeJson(Map<String, dynamic> json) {
     return Cancion(
       id: '${json['id']}',
@@ -69,8 +75,25 @@ class Cancion {
       albumId: json['albumId'] as String?,
       coverArt: json['coverArt'] as String?,
       duracion: json['duration'] as int?,
+      sufijo: json['suffix'] as String?,
     );
   }
+
+  /// Vuelve a la forma en que la manda Subsonic, para poder guardarla en el
+  /// teléfono y releerla con [Cancion.desdeJson] sin un segundo formato.
+  ///
+  /// Solo se escriben los campos que hay: así el archivo guardado se parece a
+  /// lo que devuelve el servidor, que también omite lo vacío.
+  Map<String, dynamic> aJson() => {
+    'id': id,
+    'title': titulo,
+    'artist': artista,
+    if (album != null) 'album': album,
+    if (albumId != null) 'albumId': albumId,
+    if (coverArt != null) 'coverArt': coverArt,
+    if (duracion != null) 'duration': duracion,
+    if (sufijo != null) 'suffix': sufijo,
+  };
 
   /// `3:07`, o guion cuando el servidor no informó la duración.
   String get duracionFormateada {

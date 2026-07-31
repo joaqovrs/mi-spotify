@@ -11,11 +11,14 @@ Reemplazar Spotify con una biblioteca propia servida desde casa y escuchable des
 - **Dispositivo de escucha:** Android
 - **Servidor OS:** Linux en la laptop antigua (**Debian 13 "trixie" amd64, con escritorio GNOME**)
 - **Backend:** **Navidrome** (servidor de música, expone la API Subsonic) — no se programa backend propio
-- **Acceso remoto:** **Tailscale** (VPN privada gratis; sin abrir puertos, sin IP fija, evita CGNAT)
+- **Acceso remoto:** 🔄 **en migración (30-07-2026).** Hoy anda por **Tailscale**; se pasa a
+  **puertos abiertos en el router + DDNS**. Decisión del usuario: es una app privada, ya abrió
+  puertos antes y prefiere no depender de una VPN. Plan completo en **Fase 5**.
 - **App:** **Flutter** (APK nativo Android) que consume la API Subsonic
 
 ## Arquitectura
 
+**Hoy (Tailscale, funcionando):**
 ```
 Laptop vieja (Linux Debian)                                   Teléfono Android
 ┌─────────────────────────┐    Tailscale (VPN cifrada)    ┌──────────────────┐
@@ -23,6 +26,17 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
 │ Carpeta música /srv/musica│                              │ Tailscale ON     │
 │ Tailscale                │   API Subsonic (REST)         └──────────────────┘
 └─────────────────────────┘
+```
+
+**Adonde va (puertos abiertos + DDNS) — ver Fase 5:**
+```
+Laptop vieja (Linux Debian)        Router 192.168.1.1              Teléfono Android
+┌─────────────────────────┐      ┌──────────────────┐          ┌──────────────────┐
+│ Navidrome  (:4533)       │◄────┤ port forward      │◄─internet─┤ App Flutter      │
+│ Carpeta música /srv/musica│     │ WAN:puerto → :4533│           │ (sin VPN)        │
+│ IP local fija (reserva)  │      │ cliente DDNS      │          └──────────────────┘
+└─────────────────────────┘      └──────────────────┘
+                                  casa.duckdns.org
 ```
 
 ## Hardware del servidor (confirmado)
@@ -51,18 +65,21 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
   tailnet **`100.91.22.33`**, expiración de clave desactivada, app instalada en el teléfono.
   **Prueba de fuego superada:** reproducción OK desde el teléfono con el WiFi apagado (solo datos
   móviles). El backend está terminado y accesible desde cualquier red.
-- 🔄 **Fase 4 en curso (30-07-2026): 6 de 7 etapas de la app terminadas y probadas en el teléfono.**
-  Andando: login con doble dirección local/tailnet, sesión persistente, tema claro y oscuro,
-  pantalla de inicio con carruseles reales, reproductor con segundo plano y controles en la
-  notificación, buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos y
-  playlists con crear, editar y borrar.
-  **Falta solo la etapa 7 (descargas offline).** Detalle en la sección Fase 4.
+- ✅ **Fase 4 completa (30-07-2026): las 7 etapas de la app terminadas y probadas en el teléfono.**
+  Login con doble dirección local/remota, sesión persistente, tema claro y oscuro, pantalla de
+  inicio con carruseles reales, reproductor con segundo plano y controles en la notificación,
+  buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos, playlists con crear,
+  editar y borrar, y **descargas offline** (probado OK el 30-07-2026: se descarga, se ve la pestaña
+  con carátulas y reproduce sin servidor). Detalle en la sección Fase 4.
+- 🔄 **Fase 5 en curso (30-07-2026):** migrar el acceso remoto de Tailscale a **puertos abiertos
+  en el router + DDNS**. Nada empezado todavía. Plan paso a paso en la sección Fase 5.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
 |---|---|
+| **PR de descargas offline** | Rama `feat/descargas-offline` **pusheada pero sin mergear** (commit `bc177fc`). El PR no se creó porque `gh` no está instalado en el Windows: hay que abrirlo a mano. |
 | **Resto de la música** | Subir por WinSCP a `/srv/musica`, estructura `Artista/Álbum/`. |
-| **Reserva DHCP** | La IP `192.168.1.194` es dinámica; fijarla en el router (`192.168.1.1`) atándola a la MAC (`d8-c0-a6-85-a6-a5`). Si cambia, la dirección local guardada en la app deja de servir y cae siempre al tailnet. |
+| **Reserva DHCP** | ⬆️ **Ahora obligatorio** (Fase 5, paso 1): el port forward apunta a una IP interna fija. Atar `192.168.1.194` a la MAC `d8-c0-a6-85-a6-a5` en `192.168.1.1`. |
 | **Cable de red** | La laptop está por WiFi (`wlp1s0`); ethernet sería más estable para 24/7. |
 
 ### Datos del servidor
@@ -70,12 +87,15 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
 |---|---|
 | Hostname | `mi-spotify` |
 | Usuario | `mi-spotify` |
-| IP local | `192.168.1.194` (⚠️ **DHCP dinámica** — pendiente reserva en el router) |
+| IP local | `192.168.1.194` (⚠️ **DHCP dinámica** — reserva pendiente, ahora obligatoria) |
+| MAC | `d8-c0-a6-85-a6-a5` (la que hay que atar en la reserva DHCP) |
 | Interfaz | `wlp1s0` (WiFi; el cable sería más estable para 24/7) |
+| Router | `192.168.1.1` |
 | Acceso | `ssh mi-spotify@192.168.1.194` desde Windows |
-| IP Tailscale (tailnet) | `100.91.22.33` (fija y privada — la que usa la app desde cualquier red) |
+| IP Tailscale (tailnet) | `100.91.22.33` — **en salida** (ver Fase 5); sigue funcionando por ahora |
 | Navidrome (red local) | `http://192.168.1.194:4533` |
-| Navidrome (remoto) | `http://100.91.22.33:4533` |
+| Navidrome (remoto, hoy) | `http://100.91.22.33:4533` |
+| Navidrome (remoto, futuro) | `http://<dominio-ddns>:<puerto>` — **a definir en Fase 5** |
 | Repo en el servidor | `~/mi-spotify` (deploy key SSH, solo lectura) |
 
 ## Flujo de trabajo (CI/CD)
@@ -219,7 +239,8 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 - **Nada de datos falsos.** Navidrome es de un solo usuario y privado: no hay éxitos globales, ni
   listas curadas, ni playlists colaborativas. Esas secciones se reemplazan por equivalentes reales
   (agregados recientemente, tus más escuchados, al azar) con la misma presentación.
-- Nav inferior: Inicio · Buscar · Biblioteca · Ajustes. Las descargas offline quedan para el final.
+- Nav inferior: Inicio · Buscar · Biblioteca · Ajustes. Dentro de Biblioteca, las pestañas
+  Playlists · Canciones · Álbumes · Artistas · Descargas.
 
 #### Arreglos en `AndroidManifest.xml` (no obvios)
 - `<uses-permission android:name="android.permission.INTERNET"/>` — Flutter lo agrega solo en debug;
@@ -236,7 +257,7 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 | 4 | Búsqueda (`search3`) | ✅ |
 | 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ✅ |
 | 6 | Playlists: crear, editar, borrar | ✅ |
-| 7 | Descargas offline | ⏳ siguiente |
+| 7 | Descargas offline | ✅ |
 
 **Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
 y artista (no solo al shell de pestañas); la canción que suena se marca en las listas;
@@ -272,6 +293,37 @@ ahora es un **interruptor de ícono solo**, discreto, que se deja puesto:
 - En la UI se usa **`onReorderItem`**, no `onReorder` (deprecado en Flutter 3.44): el nuevo ya
   entrega el índice de destino compensado por el hueco del elemento arrastrado.
 
+**Descargas offline (etapa 7):** el objetivo es que la app siga sirviendo con el servidor apagado
+o sin Tailscale. Decisiones:
+
+- Los archivos van al **almacenamiento privado de la app** (`getApplicationSupportDirectory`): no
+  pide ningún permiso de Android, no aparecen en la galería ni en el reproductor del sistema, y se
+  limpian solos al desinstalar.
+- Se baja por **`download` y no por `stream`**: `stream` puede transcodificar según cómo esté
+  configurado el servidor, y para guardar queremos el archivo tal cual está en `/srv/musica`. El
+  nombre conserva la extensión original, que viene en el campo `suffix` de la canción.
+- **Se guardan también los metadatos**, no solo el archivo. La pestaña Descargas tiene que poder
+  listarse sin red, y pedirle los títulos a Navidrome justo cuando no se lo puede alcanzar sería
+  absurdo. El índice va en `shared_preferences` como JSON: son unos kilobytes y no justifica traer
+  una base de datos. `Cancion.aJson()` escribe la **misma forma que manda Subsonic**, así
+  `Cancion.desdeJson` lo relee sin un segundo formato.
+- **También se baja la carátula**, si no la pantalla de descargas se vería con todos los marcadores
+  grises justo cuando más se la usa. Se nombra por id de portada, no por canción: todo un álbum
+  comparte imagen. Al borrar, la carátula solo se elimina si no queda ningún tema que la use.
+- **El índice se verifica contra el disco al leerlo.** Un archivo puede desaparecer sin que la app
+  se entere; es preferible que una canción figure como no descargada a que al tocarla no suene nada.
+- **Se baja de a una.** Saturar el túnel con veinte descargas en paralelo hace que no termine
+  ninguna y encima corta lo que esté sonando. Si una falla, se anota el motivo y la tanda sigue.
+- Enganche con el reproductor: `aMediaItem` apunta al archivo local cuando existe. Es **lo único**
+  que hace falta para que suene sin conexión, porque de ahí para abajo al reproductor le da igual
+  de dónde salga el audio.
+- ⚠️ **Cuidado con los rebuilds:** el avance de una descarga cambia varias veces por segundo. Los
+  providers derivados (`archivosDescargadosProvider`, `portadasDescargadasProvider`, etc.) miran
+  `descargasProvider.select(...)` y no el estado entero; sin ese recorte, cada tick reconstruiría
+  todas las portadas y filas en pantalla.
+- `avisar` vive en `ui/avisos.dart` y no en `ui/acciones.dart` porque lo usan tanto las acciones
+  como los widgets, y desde `acciones.dart` los imports se hacían circulares.
+
 **La cola sigue a la playlist que suena (30-07-2026):** la cola era una foto sacada al tocar
 *Reproducir*, así que reordenar la playlist mientras sonaba no cambiaba nada hasta volver a darle
 play. Ahora el handler recuerda **de dónde salió la cola** (`origenCola`, del tipo
@@ -302,31 +354,103 @@ app/lib/
   core/theme.dart                    paleta naranja, temas claro y oscuro
   core/subsonic_client.dart          cliente API (auth, doble dirección, URLs)
   core/auth_storage.dart             credenciales en el Keystore
+  core/descargas_storage.dart        archivos bajados + indice en shared_preferences
   models/biblioteca.dart             Album, Cancion, Artista, Playlist, Favoritos
+  models/descarga.dart               canción guardada en el teléfono
   services/reproductor_handler.dart  motor de audio (just_audio + audio_service)
   state/sesion_providers.dart        estado de sesión (Riverpod)
   state/tema_providers.dart          preferencia de tema
   state/biblioteca_providers.dart    inicio, búsqueda, álbumes y artistas
   state/favoritos_providers.dart     favoritos (fuente única: getStarred2)
   state/playlists_providers.dart     playlists y contenido de cada una
+  state/descargas_providers.dart     cola de descarga, progreso, lo guardado
   state/reproductor_providers.dart   cola, progreso, origen de la cola
   ui/                                pantallas + ui/widgets/ piezas compartidas
   ui/acciones.dart                   encolar, guardar en playlist, diálogos
+  ui/acciones_descarga.dart          descargar y borrar del teléfono
+  ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
 ```
+
+### Fase 5 — Acceso remoto por puertos abiertos 🔄 EN CURSO (30-07-2026)
+
+**Decisión del usuario (30-07-2026): se deja Tailscale y se pasa a abrir puertos en el router.**
+Motivo: es una app privada, ya abrió puertos antes sin problemas y prefiere no depender de una VPN
+ni de que la otra persona tenga que instalar nada. **La decisión está tomada y reafirmada — no hace
+falta volver a discutirla ni advertir sobre ella.**
+
+Nada empezado todavía. Pasos en orden:
+
+**Paso 0 — Confirmar que el ISP no usa CGNAT.** Es lo primero porque, si hay CGNAT, abrir puertos
+directamente **no puede funcionar** y hay que buscar otro camino (pedirle IP pública al ISP, o un
+túnel). Cómo se chequea: mirar la **IP WAN que muestra el router** (`192.168.1.1`) y compararla con
+la que devuelve `curl -4 ifconfig.me` desde la Debian.
+- Si son **iguales** → hay IP pública, se puede seguir.
+- Si **difieren**, o la del router arranca con `100.64.` – `100.127.` → hay CGNAT.
+
+**Paso 1 — Reserva DHCP para la Debian.** Ya estaba anotado como pendiente; ahora es obligatorio,
+porque el port forward apunta a una IP interna fija. En `192.168.1.1`, atar `192.168.1.194` a la
+MAC `d8-c0-a6-85-a6-a5`.
+
+**Paso 2 — Port forward en el router.** Regla: `WAN:<puerto> → 192.168.1.194:4533` (TCP). El puerto
+externo puede ser distinto del interno.
+
+**Paso 3 — DDNS**, porque la IP pública de casa es dinámica y si cambia la app deja de conectar.
+Opciones gratis: **DuckDNS** o **No-IP**. Se puede usar el cliente DDNS que traiga el router o
+correr uno en la Debian (contenedor o cron). Queda algo tipo `casa.duckdns.org`.
+
+**Paso 4 — Cambiar la dirección en la app.** ✅ **No hace falta tocar código.** La app ya guarda dos
+direcciones (local y remota) y sonda cuál responde; solo hay que poner en el campo remoto
+`http://casa.duckdns.org:<puerto>` en vez de `http://100.91.22.33:4533`. El manifiesto ya trae
+`usesCleartextTraffic="true"`, así que HTTP plano funciona sin cambios.
+
+**Paso 5 — Verificar** desde el teléfono con **WiFi apagado** (solo datos móviles) y **Tailscale
+apagado**: `http://casa.duckdns.org:<puerto>` tiene que cargar Navidrome, y después la app.
+
+**Paso 6 — Qué hacer con Tailscale.** Conviene **dejarlo instalado hasta terminar** de verificar,
+como camino de vuelta si algo no responde. Una vez andando se puede `sudo tailscale down` (o
+desinstalar) y sacar la máquina del tailnet en `login.tailscale.com`.
+
+Mejoras opcionales una vez que ande:
+- **HTTPS** con un proxy inverso (Caddy saca el certificado solo) sobre el dominio DDNS, para que
+  la contraseña no viaje en texto plano. Requiere abrir también el 80/443 para el desafío ACME.
+- **Fail2ban** sobre el log de Navidrome contra intentos de login repetidos.
+
+### Multiusuario (respondido el 30-07-2026, sin trabajo pendiente)
+
+**Varias personas pueden usar la app con sus propias playlists sin tocar una línea de código.**
+Navidrome es multiusuario y la app se autentica en **cada request** con las credenciales de quien
+inició sesión. Son **por usuario** en Navidrome: playlists, favoritos (`star`/`getStarred2`) y
+conteos de reproducción — o sea "Tus más escuchados" y "Volvé a escuchar" son de cada uno. Las
+credenciales viven en el Keystore de cada teléfono, así que cada instalación es independiente.
+
+Lo único que hay que hacer es **crear un usuario por persona** en `Settings → Users` de Navidrome,
+**sin marcar admin** (la app no usa ningún endpoint de administración). La biblioteca de música sí
+es compartida: todos ven lo mismo de `/srv/musica`.
+
+Único detalle conocido: `getPlaylists` de Subsonic devuelve las propias **más las marcadas como
+públicas** por cualquier usuario. Las que crea la app salen privadas (default de Navidrome), pero si
+alguien marca una como pública desde la web, aparece para todos y **la app no muestra de quién es**.
+Si llega a molestar, se arregla con un cartelito de "compartida por X" en `FilaPlaylist`.
 
 ---
 
 ## Orden de ejecución
 Fase 1 → Fase 2 → probar Navidrome en navegador local → Fase 3 → probar acceso remoto en
-navegador (otra red) → Fase 4. **No** empezar por la app: validar backend + acceso remoto primero.
+navegador (otra red) → Fase 4 → **Fase 5 (migración a puertos)**. Las fases 1 a 4 están hechas.
 
 ## Verificación end-to-end
 1. `http://localhost:4533` en la laptop y `http://ip-local:4533` desde Windows reproducen en la red local.
-2. Con el teléfono en otra red + Tailscale, `http://100.x.x.x:4533` carga Navidrome.
+2. Con el teléfono en otra red, la dirección remota carga Navidrome (hoy el tailnet; tras la Fase 5,
+   el dominio DDNS con el puerto abierto, y **sin Tailscale**).
 3. App: login valida con `ping`; reproduce en streaming; controles en notificación; funciona fuera de casa.
-4. `flutter build apk --release` e instalar el APK definitivo.
+4. Descargas: bajar un álbum, cortar la red y verificar que la pestaña Descargas se ve con carátulas
+   y reproduce.
+5. `flutter build apk --release` e instalar el APK definitivo.
 
 ## Notas
 - La música la aporta el usuario (archivos en `/srv/musica`). Navidrome no descarga música.
 - Backups: respaldar la carpeta `data` de Navidrome y la carpeta de música.
-- Seguridad: con Tailscale, Navidrome no queda expuesto a internet; solo dispositivos del tailnet lo ven.
+- Exposición: hoy Navidrome solo lo ven los dispositivos del tailnet. Tras la **Fase 5** queda
+  publicado en internet detrás del puerto abierto del router; el control de acceso pasa a ser el
+  login de Navidrome. Decisión tomada y reafirmada por el usuario — está asumido, no hace falta
+  volver sobre el tema.

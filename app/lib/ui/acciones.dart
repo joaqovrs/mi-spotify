@@ -5,6 +5,7 @@ import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
+import 'avisos.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
@@ -249,7 +250,8 @@ class _DialogoNombreState extends State<_DialogoNombre> {
   }
 }
 
-/// Confirmación para acciones que no se pueden deshacer.
+/// Confirmación para acciones que no se pueden deshacer, y que además borran
+/// algo del servidor.
 Future<bool> confirmar(
   BuildContext context, {
   required String titulo,
@@ -278,14 +280,4 @@ Future<bool> confirmar(
   );
 
   return respuesta ?? false;
-}
-
-/// Muestra un aviso reemplazando al anterior, para que dos acciones seguidas
-/// no encolen dos mensajes que se pisan.
-void avisar(ScaffoldMessengerState mensajero, String texto) {
-  mensajero
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(content: Text(texto), duration: const Duration(seconds: 2)),
-    );
 }
