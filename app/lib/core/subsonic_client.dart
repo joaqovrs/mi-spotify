@@ -7,23 +7,23 @@ import 'package:dio/dio.dart';
 
 import '../models/biblioteca.dart';
 
-/// Error devuelto por el servidor Subsonic (Navidrome) o por la conexión.
+/// Error devuelto por el servidor Subsonic (Navidrome) o por la conexion.
 class SubsonicException implements Exception {
   const SubsonicException(this.mensaje, {this.codigo});
 
   final String mensaje;
 
-  /// Código de error de la API Subsonic, cuando lo hay.
-  /// Los que interesan: 40 = credenciales inválidas, 70 = no encontrado.
+  /// Codigo de error de la API Subsonic, cuando lo hay.
+  /// Los que interesan: 40 = credenciales invalidas, 70 = no encontrado.
   ///
-  /// Que venga un código significa que el servidor **contestó**: el problema
-  /// es la petición, no la red.
+  /// Que venga un codigo significa que el servidor **contesto**: el problema
+  /// es la peticion, no la red.
   final int? codigo;
 
   bool get esCredencialInvalida => codigo == 40;
 
   /// True cuando no se pudo llegar al servidor (a diferencia de haber llegado
-  /// y que rechazara la petición).
+  /// y que rechazara la peticion).
   bool get esProblemaDeRed => codigo == null;
 
   @override
@@ -32,20 +32,20 @@ class SubsonicException implements Exception {
 
 /// Cliente de la API Subsonic que expone Navidrome.
 ///
-/// La autenticación de Subsonic no manda la contraseña: por cada request se
-/// genera un `salt` al azar y se envía `t = md5(contraseña + salt)`. El
-/// servidor rehace el mismo cálculo y compara. Así la contraseña nunca viaja,
+/// La autenticacion de Subsonic no manda la contraseña: por cada request se
+/// genera un `salt` al azar y se envia `t = md5(contraseña + salt)`. El
+/// servidor rehace el mismo calculo y compara. Asi la contraseña nunca viaja,
 /// ni siquiera cifrada.
 ///
 /// El cliente acepta **varias direcciones** para el mismo servidor (la de la
-/// red local y la del tailnet) y descubre sola cuál responde. Ver [_resolver].
+/// red local y la del tailnet) y descubre sola cual responde. Ver [_resolver].
 class SubsonicClient {
   SubsonicClient({
     required List<String> urls,
     required this.usuario,
     required this.password,
     Dio? dio,
-  }) : assert(urls.isNotEmpty, 'Hace falta al menos una dirección'),
+  }) : assert(urls.isNotEmpty, 'Hace falta al menos una direccion'),
        urls = List.unmodifiable(urls),
        _dio =
            dio ??
@@ -65,7 +65,7 @@ class SubsonicClient {
            );
 
   /// Direcciones candidatas, en orden de preferencia. Normalmente la local
-  /// primero (más rápida, sin pasar por el túnel) y la del tailnet después.
+  /// primero (mas rapida, sin pasar por el tunel) y la del tailnet despues.
   final List<String> urls;
   final String usuario;
   final String password;
@@ -73,19 +73,19 @@ class SubsonicClient {
   final Dio _dio;
 
   /// Dio con timeouts cortos, solo para probar direcciones. Sin esto, detectar
-  /// que la IP local no responde tardaría 12 segundos en vez de 2.
+  /// que la IP local no responde tardaria 12 segundos en vez de 2.
   final Dio _dioSonda;
 
   final Random _random = Random.secure();
 
-  /// Dirección que se comprobó que funciona. Se descarta al fallar la red,
-  /// para que un cambio de WiFi a datos móviles se detecte solo.
+  /// Direccion que se comprobo que funciona. Se descarta al fallar la red,
+  /// para que un cambio de WiFi a datos moviles se detecte solo.
   String? _activa;
 
   static const String _version = '1.16.1';
-  static const String _cliente = 'miSpotify';
+  static const String _cliente = 'MiMusic';
 
-  /// Dirección en uso. Antes de la primera conexión asume la preferida.
+  /// Direccion en uso. Antes de la primera conexion asume la preferida.
   String get baseUrlActiva => _activa ?? urls.first;
 
   /// Acepta lo que el usuario haya tipeado y devuelve una URL usable.
@@ -104,7 +104,7 @@ class SubsonicClient {
     return url;
   }
 
-  /// Parámetros de autenticación, con un salt nuevo en cada llamada.
+  /// Parametros de autenticacion, con un salt nuevo en cada llamada.
   Map<String, String> _paramsAuth() {
     final salt = _generarSalt();
     final token = md5.convert(utf8.encode(password + salt)).toString();
@@ -126,11 +126,11 @@ class SubsonicClient {
     ).join();
   }
 
-  /// Arma una URL firmada sobre una dirección concreta.
+  /// Arma una URL firmada sobre una direccion concreta.
   ///
   /// Los valores de [params] pueden ser un `String` o una `List<String>`.
-  /// Subsonic no usa listas separadas por comas: repite el parámetro
-  /// (`songId=1&songId=2`), y así es como lo escribe `Uri` con una lista.
+  /// Subsonic no usa listas separadas por comas: repite el parametro
+  /// (`songId=1&songId=2`), y asi es como lo escribe `Uri` con una lista.
   Uri _uriEn(
     String baseUrl,
     String endpoint, [
@@ -141,7 +141,7 @@ class SubsonicClient {
     ).replace(queryParameters: {..._paramsAuth(), ...params});
   }
 
-  /// Arma una URL completa firmada sobre la dirección activa. Se usa para
+  /// Arma una URL completa firmada sobre la direccion activa. Se usa para
   /// portadas y streaming, donde el reproductor necesita la URL en vez de la
   /// respuesta parseada.
   Uri construirUri(String endpoint, [Map<String, String> params = const {}]) =>
@@ -150,8 +150,8 @@ class SubsonicClient {
   /// Prueba las direcciones en orden y se queda con la primera que responde.
   ///
   /// Si alguna contesta con un error de la API (por ejemplo contraseña mala),
-  /// corta ahí: llegamos al servidor, probar la otra dirección no aportaría
-  /// nada y solo demoraría el mensaje de error.
+  /// corta ahi: llegamos al servidor, probar la otra direccion no aportaria
+  /// nada y solo demoraria el mensaje de error.
   Future<String> _resolver() async {
     SubsonicException? ultimoError;
 
@@ -172,7 +172,7 @@ class SubsonicClient {
 
   /// Llama a un endpoint y devuelve el contenido de `subsonic-response`.
   ///
-  /// Si la dirección activa deja de responder (típicamente al salir de casa),
+  /// Si la direccion activa deja de responder (tipicamente al salir de casa),
   /// la descarta y vuelve a resolver antes de dar el error por definitivo.
   Future<Map<String, dynamic>> _get(
     String endpoint, [
@@ -191,7 +191,7 @@ class SubsonicClient {
     }
   }
 
-  /// Ejecuta la petición y desenvuelve la respuesta Subsonic.
+  /// Ejecuta la peticion y desenvuelve la respuesta Subsonic.
   Future<Map<String, dynamic>> _pedir(Dio dio, Uri uri) async {
     late final Response<dynamic> respuesta;
     try {
@@ -203,7 +203,7 @@ class SubsonicClient {
     final cuerpo = respuesta.data;
     if (cuerpo is! Map) {
       throw const SubsonicException(
-        'El servidor respondió algo inesperado. ¿Es realmente un servidor Navidrome?',
+        'El servidor respondio algo inesperado. ¿Es realmente un servidor Navidrome?',
         codigo: -1,
       );
     }
@@ -211,7 +211,7 @@ class SubsonicClient {
     final datos = cuerpo['subsonic-response'];
     if (datos is! Map) {
       throw const SubsonicException(
-        'La respuesta no tiene formato Subsonic. Revisá la dirección del servidor.',
+        'La respuesta no tiene formato Subsonic. Revisa la direccion del servidor.',
         codigo: -1,
       );
     }
@@ -223,7 +223,7 @@ class SubsonicClient {
       throw SubsonicException(
         codigo == 40
             ? 'Usuario o contraseña incorrectos.'
-            : (mensaje ?? 'El servidor rechazó la petición.'),
+            : (mensaje ?? 'El servidor rechazo la peticion.'),
         codigo: codigo ?? -1,
       );
     }
@@ -236,27 +236,27 @@ class SubsonicClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'El servidor no respondió a tiempo. Revisá que la laptop esté '
+        return 'El servidor no respondio a tiempo. Revisa que la laptop este '
             'encendida y con internet.';
       case DioExceptionType.connectionError:
-        return 'No se pudo conectar al servidor. Revisá la dirección y que la '
-            'laptop esté encendida.';
+        return 'No se pudo conectar al servidor. Revisa la direccion y que la '
+            'laptop este encendida.';
       case DioExceptionType.badResponse:
-        return 'El servidor respondió con un error '
-            '(${e.response?.statusCode ?? 'sin código'}).';
+        return 'El servidor respondio con un error '
+            '(${e.response?.statusCode ?? 'sin codigo'}).';
       default:
-        return 'Fallo de conexión con el servidor.';
+        return 'Fallo de conexion con el servidor.';
     }
   }
 
   /// Verifica servidor y credenciales de una sola vez.
   Future<void> ping() => _get('ping');
 
-  /// URL de la portada de un álbum o canción.
+  /// URL de la portada de un album o cancion.
   ///
-  /// El resultado se memoriza a propósito. Como cada llamada genera un salt
-  /// nuevo, sin esta caché la URL cambiaría en cada rebuild del widget y la
-  /// caché de imágenes nunca acertaría: cada scroll volvería a descargar todas
+  /// El resultado se memoriza a proposito. Como cada llamada genera un salt
+  /// nuevo, sin esta cache la URL cambiaria en cada rebuild del widget y la
+  /// cache de imagenes nunca acertaria: cada scroll volveria a descargar todas
   /// las portadas.
   Uri urlPortada(String id, {int? tamano}) {
     final clave = '$id@${tamano ?? 0}';
@@ -271,16 +271,16 @@ class SubsonicClient {
 
   final Map<String, Uri> _portadas = {};
 
-  /// URL de streaming de una canción, lista para el reproductor.
+  /// URL de streaming de una cancion, lista para el reproductor.
   Uri urlStream(String id) => construirUri('stream', {'id': id});
 
   // --------------------------------------------------------------- Descargas
 
-  /// Baja el archivo **original** de una canción al teléfono.
+  /// Baja el archivo **original** de una cancion al telefono.
   ///
-  /// Usa `download` y no `stream`: `stream` puede transcodificar según la
-  /// configuración del servidor, y para guardar en disco queremos el archivo
-  /// tal cual está en `/srv/musica`.
+  /// Usa `download` y no `stream`: `stream` puede transcodificar segun la
+  /// configuracion del servidor, y para guardar en disco queremos el archivo
+  /// tal cual esta en `/srv/musica`.
   ///
   /// Devuelve el tamaño escrito.
   Future<int> descargarCancion(
@@ -295,7 +295,7 @@ class SubsonicClient {
     );
   }
 
-  /// Baja la carátula para poder mostrarla sin servidor.
+  /// Baja la caratula para poder mostrarla sin servidor.
   Future<int> descargarPortada(String coverArt, String destino, {int tamano = 640}) {
     return _bajarA(
       (base) => _uriEn(base, 'getCoverArt', {'id': coverArt, 'size': '$tamano'}),
@@ -305,13 +305,13 @@ class SubsonicClient {
 
   /// Escribe un endpoint binario a disco.
   ///
-  /// Se resuelve la dirección igual que en el resto del cliente, pero acá no
+  /// Se resuelve la direccion igual que en el resto del cliente, pero aqui no
   /// se reintenta con la otra: una descarga puede durar minutos y volver a
-  /// empezarla sola, sin avisar, sorprendería más de lo que ayudaría.
+  /// empezarla sola, sin avisar, sorprenderia mas de lo que ayudaria.
   ///
-  /// Reusa el Dio normal a propósito: su `receiveTimeout` cuenta el tiempo
-  /// **entre trozos** recibidos, no el total, así que no corta un archivo
-  /// grande — solo uno que dejó de llegar.
+  /// Reusa el Dio normal a proposito: su `receiveTimeout` cuenta el tiempo
+  /// **entre trozos** recibidos, no el total, asi que no corta un archivo
+  /// grande — solo uno que dejo de llegar.
   Future<int> _bajarA(
     Uri Function(String baseUrl) arma,
     String destino, {
@@ -338,10 +338,10 @@ class SubsonicClient {
 
   // ---------------------------------------------------------------- Biblioteca
 
-  /// Álbumes según un criterio de `getAlbumList2`.
+  /// Albumes segun un criterio de `getAlbumList2`.
   ///
   /// Tipos que usa la pantalla de inicio: `newest` (agregados recientemente),
-  /// `frequent` (los que más escuchaste), `recent` (los últimos que sonaron),
+  /// `frequent` (los que mas escuchaste), `recent` (los ultimos que sonaron),
   /// `random` y `alphabeticalByName`.
   Future<List<Album>> albumes({
     required String tipo,
@@ -369,7 +369,7 @@ class SubsonicClient {
   }
 
   /// Todos los artistas. Subsonic los devuelve agrupados por letra inicial,
-  /// así que hay que aplanar los índices.
+  /// asi que hay que aplanar los indices.
   Future<List<Artista>> artistas() async {
     final datos = await _get('getArtists');
     final indices = _comoLista(datos['artists'], 'index');
@@ -380,14 +380,14 @@ class SubsonicClient {
     ];
   }
 
-  /// Canciones de un álbum, en el orden del disco.
+  /// Canciones de un album, en el orden del disco.
   Future<List<Cancion>> cancionesDeAlbum(String albumId) async {
     final datos = await _get('getAlbum', {'id': albumId});
 
     return _comoLista(datos['album'], 'song').map(Cancion.desdeJson).toList();
   }
 
-  /// Álbumes de un artista.
+  /// Albumes de un artista.
   Future<List<Album>> albumesDeArtista(String artistaId) async {
     final datos = await _get('getArtist', {'id': artistaId});
 
@@ -413,7 +413,7 @@ class SubsonicClient {
 
   /// Marca o desmarca un favorito.
   ///
-  /// Subsonic usa un parámetro distinto por tipo (`id` para canciones,
+  /// Subsonic usa un parametro distinto por tipo (`id` para canciones,
   /// `albumId`, `artistId`) y dos endpoints distintos en vez de un booleano.
   Future<void> marcarFavorito({
     required String id,
@@ -442,7 +442,7 @@ class SubsonicClient {
 
   /// Canciones de una playlist, en el orden guardado.
   ///
-  /// Subsonic las llama `entry` acá, no `song` como en el resto de la API.
+  /// Subsonic las llama `entry` aqui, no `song` como en el resto de la API.
   Future<List<Cancion>> cancionesDePlaylist(String id) async {
     final datos = await _get('getPlaylist', {'id': id});
 
@@ -464,13 +464,13 @@ class SubsonicClient {
       return Playlist.desdeJson(Map<String, dynamic>.from(creada));
     }
 
-    // La especificación permite contestar sin cuerpo. Como necesitamos el id
+    // La especificacion permite contestar sin cuerpo. Como necesitamos el id
     // para poder abrirla, en ese caso la rescatamos del listado por nombre.
     final todas = await playlists();
     final coincidencias = todas.where((p) => p.nombre == nombre);
     if (coincidencias.isEmpty) {
       throw const SubsonicException(
-        'La playlist se creó pero el servidor no devolvió su identificador.',
+        'La playlist se creo pero el servidor no devolvio su identificador.',
         codigo: -1,
       );
     }
@@ -498,8 +498,8 @@ class SubsonicClient {
     });
   }
 
-  /// Quita canciones **por posición**, no por id: una misma canción puede estar
-  /// repetida en la playlist y hay que poder sacar solo la que se tocó.
+  /// Quita canciones **por posicion**, no por id: una misma cancion puede estar
+  /// repetida en la playlist y hay que poder sacar solo la que se toco.
   Future<void> quitarDePlaylist({
     required String id,
     required List<int> indices,
@@ -514,9 +514,9 @@ class SubsonicClient {
 
   /// Reescribe el contenido completo en el orden dado.
   ///
-  /// `updatePlaylist` solo sabe agregar al final y quitar por índice, así que
+  /// `updatePlaylist` solo sabe agregar al final y quitar por indice, asi que
   /// reordenar exige mandar la lista entera. `createPlaylist` con un
-  /// `playlistId` existente es la vía que deja Subsonic para eso.
+  /// `playlistId` existente es la via que deja Subsonic para eso.
   Future<void> reemplazarCancionesDePlaylist({
     required String id,
     required List<String> cancionIds,
@@ -528,7 +528,7 @@ class SubsonicClient {
     await _get('deletePlaylist', {'id': id});
   }
 
-  /// Busca en toda la biblioteca: canciones, álbumes y artistas de una vez.
+  /// Busca en toda la biblioteca: canciones, albumes y artistas de una vez.
   Future<ResultadoBusqueda> buscar(String consulta, {int porTipo = 30}) async {
     final texto = consulta.trim();
     if (texto.isEmpty) return const ResultadoBusqueda.vacio();
@@ -550,8 +550,8 @@ class SubsonicClient {
   }
 
   /// Saca una lista de un contenedor de Subsonic tolerando las dos formas en
-  /// que puede venir: ausente cuando está vacía, o un objeto suelto en vez de
-  /// una lista cuando hay un único elemento.
+  /// que puede venir: ausente cuando esta vacia, o un objeto suelto en vez de
+  /// una lista cuando hay un unico elemento.
   List<Map<String, dynamic>> _comoLista(dynamic contenedor, String clave) {
     if (contenedor is! Map) return const [];
 

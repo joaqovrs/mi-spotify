@@ -35,7 +35,7 @@ class _BuscarScreenState extends ConsumerState<BuscarScreen> {
 
   /// Espera a que dejes de escribir antes de consultar.
   ///
-  /// Sin esto, "beatles" dispararía siete búsquedas contra el servidor, y
+  /// Sin esto, "beatles" dispararia siete busquedas contra el servidor, y
   /// desde fuera de casa cada una sale y vuelve por internet.
   void _alEscribir(String texto) {
     _retardo?.cancel();
@@ -73,7 +73,7 @@ class _BuscarScreenState extends ConsumerState<BuscarScreen> {
                     autocorrect: false,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Canciones, álbumes o artistas',
+                      hintText: 'Canciones, albumes o artistas',
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _controlador.text.isEmpty
                           ? null
@@ -92,7 +92,7 @@ class _BuscarScreenState extends ConsumerState<BuscarScreen> {
             Expanded(
               child: consulta.trim().isEmpty
                   ? const EstadoVacio(
-                      mensaje: 'Escribí para buscar en tu biblioteca.',
+                      mensaje: 'Escribe para buscar en tu biblioteca.',
                       icono: Icons.search_rounded,
                     )
                   : const _Resultados(),
@@ -122,7 +122,7 @@ class _Resultados extends ConsumerWidget {
       data: (resultado) {
         if (resultado.estaVacio) {
           return const EstadoVacio(
-            mensaje: 'No encontré nada con ese nombre.',
+            mensaje: 'No encontre nada con ese nombre.',
             icono: Icons.search_off_rounded,
           );
         }
@@ -147,7 +147,7 @@ class _Resultados extends ConsumerWidget {
                 ),
             ],
             if (resultado.albumes.isNotEmpty) ...[
-              _Encabezado('Álbumes', textos),
+              _Encabezado('Albumes', textos),
               for (final album in resultado.albumes)
                 _FilaAlbum(album: album),
             ],
@@ -185,7 +185,7 @@ class _Encabezado extends StatelessWidget {
   }
 }
 
-/// Álbum en formato fila, que es lo que corresponde en una lista de resultados
+/// Album en formato fila, que es lo que corresponde en una lista de resultados
 /// mezclada con canciones y artistas.
 class _FilaAlbum extends StatelessWidget {
   const _FilaAlbum({required this.album});

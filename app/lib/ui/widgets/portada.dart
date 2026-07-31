@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/descargas_providers.dart';
 import '../../state/sesion_providers.dart';
 
-/// Portada de álbum, canción o artista.
+/// Portada de album, cancion o artista.
 ///
 /// Cuando el servidor no tiene imagen (o falla la descarga) muestra un
 /// marcador con la misma forma, para que las grillas no se descuadren.
@@ -20,13 +20,13 @@ class Portada extends ConsumerWidget {
     super.key,
   });
 
-  /// Identificador de portada que devolvió Subsonic. Null si no hay.
+  /// Identificador de portada que devolvio Subsonic. Null si no hay.
   final String? coverArt;
 
   final double lado;
   final double radio;
 
-  /// Los artistas se muestran redondos; los álbumes, cuadrados.
+  /// Los artistas se muestran redondos; los albumes, cuadrados.
   final bool circular;
 
   @override
@@ -40,9 +40,9 @@ class Portada extends ConsumerWidget {
       return _Marcador(lado: lado, forma: forma);
     }
 
-    // Si el álbum está descargado, la carátula sale del teléfono. Sin esto la
-    // pantalla de descargas se vería con todos los marcadores grises justo
-    // cuando no hay servidor, que es cuando más se usa.
+    // Si el album esta descargado, la caratula sale del telefono. Sin esto la
+    // pantalla de descargas se veria con todos los marcadores grises justo
+    // cuando no hay servidor, que es cuando mas se usa.
     final local = ref.watch(portadasDescargadasProvider)[id];
     if (local != null) {
       return ClipRRect(

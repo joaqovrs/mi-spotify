@@ -1,14 +1,14 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
-/// Motor de reproducción.
+/// Motor de reproduccion.
 ///
 /// `audio_service` corre esto dentro de un servicio en primer plano de Android,
-/// que es lo que permite que la música siga sonando con la app cerrada y que
-/// aparezcan los controles en la notificación y en la pantalla de bloqueo.
+/// que es lo que permite que la musica siga sonando con la app cerrada y que
+/// aparezcan los controles en la notificacion y en la pantalla de bloqueo.
 ///
-/// La URL de streaming de cada canción viaja en `extras['url']` del [MediaItem],
-/// así el handler no necesita conocer el cliente de Subsonic ni las credenciales.
+/// La URL de streaming de cada cancion viaja en `extras['url']` del [MediaItem],
+/// asi el handler no necesita conocer el cliente de Subsonic ni las credenciales.
 class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   ReproductorHandler() {
     _player.playbackEventStream.listen(
@@ -16,8 +16,8 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       onError: (Object e, StackTrace s) => _difundirError(),
     );
 
-    // Cuando el reproductor pasa de pista, hay que avisarle al sistema cuál
-    // suena ahora para que la notificación se actualice.
+    // Cuando el reproductor pasa de pista, hay que avisarle al sistema cual
+    // suena ahora para que la notificacion se actualice.
     _player.currentIndexStream.listen((indice) {
       final lista = queue.value;
       if (indice == null || indice >= lista.length) return;
@@ -25,7 +25,7 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     });
 
     // Al terminar la cola, volver al principio en pausa en vez de quedar en un
-    // estado raro con la última pista terminada.
+    // estado raro con la ultima pista terminada.
     _player.processingStateStream.listen((estado) async {
       if (estado == ProcessingState.completed) {
         await _player.pause();
@@ -38,23 +38,23 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   String? _origenCola;
 
-  /// De dónde salió la cola que está sonando.
+  /// De donde salio la cola que esta sonando.
   ///
-  /// Sirve para saber si una edición hecha en pantalla tiene que reflejarse en
-  /// la reproducción: reordenar la playlist que estás escuchando cambia lo que
+  /// Sirve para saber si una edicion hecha en pantalla tiene que reflejarse en
+  /// la reproduccion: reordenar la playlist que estas escuchando cambia lo que
   /// viene, pero reordenar otra cualquiera no. Queda en null cuando la cola no
-  /// se corresponde con ninguna lista editable — un álbum, o una mezcla al azar
+  /// se corresponde con ninguna lista editable — un album, o una mezcla al azar
   /// que ya no respeta el orden original.
   String? get origenCola => _origenCola;
 
-  /// Si el modo aleatorio está encendido.
+  /// Si el modo aleatorio esta encendido.
   ///
-  /// Es un modo, no una acción: la cola conserva el orden del álbum o de la
+  /// Es un modo, no una accion: la cola conserva el orden del album o de la
   /// playlist y solo cambia el recorrido. Por eso apagarlo devuelve todo a su
   /// lugar sin tener que recargar nada.
   bool get aleatorioActivo => _player.shuffleModeEnabled;
 
-  /// Carga una lista y arranca en la posición indicada.
+  /// Carga una lista y arranca en la posicion indicada.
   Future<void> reproducirLista(
     List<MediaItem> canciones,
     int indice, {
@@ -73,7 +73,7 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     );
 
     // Cargar canciones nuevas reinicia el recorrido: hay que sortearlo otra vez
-    // o el aleatorio quedaría siguiendo el orden del disco.
+    // o el aleatorio quedaria siguiendo el orden del disco.
     if (_player.shuffleModeEnabled) await _player.shuffle();
 
     await _player.play();
@@ -85,18 +85,18 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
     // Se sortea antes de encender para que cada vez que se active salga un
     // recorrido nuevo, y no siempre el mismo de la primera vez. `shuffle` deja
-    // primera a la canción que está sonando, así que no se corta nada.
+    // primera a la cancion que esta sonando, asi que no se corta nada.
     if (activo) await _player.shuffle();
     await _player.setShuffleModeEnabled(activo);
 
     playbackState.add(playbackState.value.copyWith(shuffleMode: shuffleMode));
   }
 
-  /// Mueve una canción dentro de la cola sin cortar lo que suena.
+  /// Mueve una cancion dentro de la cola sin cortar lo que suena.
   ///
-  /// Los índices son los mismos que usa `onReorderItem`: [hasta] es la posición
-  /// final, ya descontado el hueco que deja la canción movida. Es también lo
-  /// que espera `moveAudioSource`, así que pasan derecho.
+  /// Los indices son los mismos que usa `onReorderItem`: [hasta] es la posicion
+  /// final, ya descontado el hueco que deja la cancion movida. Es tambien lo
+  /// que espera `moveAudioSource`, asi que pasan derecho.
   Future<void> moverEnCola(int desde, int hasta) async {
     final lista = queue.value;
     if (!_enRango(desde, lista) || !_enRango(hasta, lista)) return;
@@ -109,8 +109,8 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await _player.moveAudioSource(desde, hasta);
   }
 
-  /// Saca una canción de la cola. Si era la última, deja el reproductor parado
-  /// en vez de en una cola vacía sonando a nada.
+  /// Saca una cancion de la cola. Si era la ultima, deja el reproductor parado
+  /// en vez de en una cola vacia sonando a nada.
   Future<void> quitarDeCola(int indice) async {
     final lista = queue.value;
     if (!_enRango(indice, lista)) return;
@@ -132,10 +132,10 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   bool _enRango(int indice, List<MediaItem> lista) =>
       indice >= 0 && indice < lista.length;
 
-  /// Suma canciones al final de la cola sin cortar lo que está sonando.
+  /// Suma canciones al final de la cola sin cortar lo que esta sonando.
   ///
-  /// Con la cola vacía no tendría sentido "agregar" a la nada: en ese caso
-  /// arranca la reproducción, que es lo que espera quien toca el botón.
+  /// Con la cola vacia no tendria sentido "agregar" a la nada: en ese caso
+  /// arranca la reproduccion, que es lo que espera quien toca el boton.
   Future<void> agregarACola(List<MediaItem> canciones) async {
     if (canciones.isEmpty) return;
 
@@ -151,7 +151,7 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   AudioSource _fuenteDe(MediaItem item) {
     final url = item.extras?['url'] as String?;
     if (url == null) {
-      throw StateError('La canción ${item.id} no trae URL de streaming.');
+      throw StateError('La cancion ${item.id} no trae URL de streaming.');
     }
     return AudioSource.uri(Uri.parse(url), tag: item);
   }
@@ -204,8 +204,8 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   @override
   Future<void> skipToPrevious() async {
-    // Igual que en Spotify: si ya pasaron unos segundos, el botón reinicia la
-    // canción en vez de saltar a la anterior.
+    // Igual que en Spotify: si ya pasaron unos segundos, el boton reinicia la
+    // cancion en vez de saltar a la anterior.
     if (_player.position > const Duration(seconds: 4)) {
       await _player.seek(Duration.zero);
       return;

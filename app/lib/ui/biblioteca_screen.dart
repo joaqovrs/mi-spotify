@@ -15,7 +15,7 @@ import 'playlist_screen.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
-/// Tu biblioteca: tus playlists y todo lo que marcaste con el corazón.
+/// Tu biblioteca: tus playlists y todo lo que marcaste con el corazon.
 class BibliotecaScreen extends ConsumerWidget {
   const BibliotecaScreen({super.key});
 
@@ -54,7 +54,7 @@ class BibliotecaScreen extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'Playlists'),
                   Tab(text: 'Canciones'),
-                  Tab(text: 'Álbumes'),
+                  Tab(text: 'Albumes'),
                   Tab(text: 'Artistas'),
                   Tab(text: 'Descargas'),
                 ],
@@ -63,7 +63,7 @@ class BibliotecaScreen extends ConsumerWidget {
                 child: TabBarView(
                   children: [
                     _Playlists(),
-                    // Los tres favoritos salen de una sola consulta, así que
+                    // Los tres favoritos salen de una sola consulta, asi que
                     // cada pestaña se sirve de la misma respuesta.
                     _DesdeFavoritos(_Canciones.desde),
                     _DesdeFavoritos(_Albumes.desde),
@@ -109,7 +109,7 @@ class _Playlists extends ConsumerWidget {
           nueva,
           if (playlists.isEmpty)
             const EstadoVacio(
-              mensaje: 'Todavía no tenés playlists.',
+              mensaje: 'Todavia no tienes playlists.',
               icono: Icons.queue_music_rounded,
             )
           else
@@ -138,7 +138,7 @@ class _Playlists extends ConsumerWidget {
           .read(playlistsProvider.notifier)
           .crear(nombre: nombre);
 
-      // Se abre recién creada: es lo que uno quiere hacer a continuación.
+      // Se abre recien creada: es lo que uno quiere hacer a continuacion.
       if (context.mounted) _abrir(context, creada);
     } on SubsonicException catch (e) {
       avisar(mensajero, e.mensaje);
@@ -188,7 +188,7 @@ class _Canciones extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (canciones.isEmpty) {
       return const _Vacio(
-        mensaje: 'Tocá el corazón en una canción para guardarla acá.',
+        mensaje: 'Toca el corazon en una cancion para guardarla aqui.',
         icono: Icons.favorite_border_rounded,
       );
     }
@@ -221,7 +221,7 @@ class _Albumes extends StatelessWidget {
   Widget build(BuildContext context) {
     if (albumes.isEmpty) {
       return const _Vacio(
-        mensaje: 'Los álbumes que marques aparecen acá.',
+        mensaje: 'Los albumes que marques aparecen aqui.',
         icono: Icons.album_outlined,
       );
     }
@@ -259,7 +259,7 @@ class _Artistas extends StatelessWidget {
   Widget build(BuildContext context) {
     if (artistas.isEmpty) {
       return const _Vacio(
-        mensaje: 'Los artistas que sigas aparecen acá.',
+        mensaje: 'Los artistas que sigas aparecen aqui.',
         icono: Icons.person_outline_rounded,
       );
     }
@@ -279,7 +279,7 @@ class _Artistas extends StatelessWidget {
   }
 }
 
-/// Los vacíos van dentro de un scroll para que el gesto de tirar hacia abajo
+/// Los vacios van dentro de un scroll para que el gesto de tirar hacia abajo
 /// siga funcionando aunque no haya contenido.
 class _Vacio extends StatelessWidget {
   const _Vacio({required this.mensaje, required this.icono});

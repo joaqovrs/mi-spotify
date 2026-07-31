@@ -1,6 +1,6 @@
 /// Modelos de la biblioteca, mapeados desde las respuestas de Subsonic.
 ///
-/// Navidrome omite los campos vacíos en vez de mandarlos en null, así que
+/// Navidrome omite los campos vacios en vez de mandarlos en null, asi que
 /// todos los parseos toleran ausencias.
 library;
 
@@ -29,7 +29,7 @@ class Album {
   factory Album.desdeJson(Map<String, dynamic> json) {
     return Album(
       id: '${json['id']}',
-      nombre: json['name'] as String? ?? json['album'] as String? ?? 'Sin título',
+      nombre: json['name'] as String? ?? json['album'] as String? ?? 'Sin titulo',
       artista: json['artist'] as String? ?? 'Artista desconocido',
       artistaId: json['artistId'] as String?,
       coverArt: json['coverArt'] as String?,
@@ -58,10 +58,10 @@ class Cancion {
   final String? albumId;
   final String? coverArt;
 
-  /// Duración en segundos.
+  /// Duracion en segundos.
   final int? duracion;
 
-  /// Extensión del archivo original en el servidor (`mp3`, `flac`, `m4a`).
+  /// Extension del archivo original en el servidor (`mp3`, `flac`, `m4a`).
   /// Se usa al descargar, para que el archivo local conserve su formato en el
   /// nombre y el reproductor no tenga que adivinarlo.
   final String? sufijo;
@@ -69,7 +69,7 @@ class Cancion {
   factory Cancion.desdeJson(Map<String, dynamic> json) {
     return Cancion(
       id: '${json['id']}',
-      titulo: json['title'] as String? ?? 'Sin título',
+      titulo: json['title'] as String? ?? 'Sin titulo',
       artista: json['artist'] as String? ?? 'Artista desconocido',
       album: json['album'] as String?,
       albumId: json['albumId'] as String?,
@@ -80,10 +80,10 @@ class Cancion {
   }
 
   /// Vuelve a la forma en que la manda Subsonic, para poder guardarla en el
-  /// teléfono y releerla con [Cancion.desdeJson] sin un segundo formato.
+  /// telefono y releerla con [Cancion.desdeJson] sin un segundo formato.
   ///
-  /// Solo se escriben los campos que hay: así el archivo guardado se parece a
-  /// lo que devuelve el servidor, que también omite lo vacío.
+  /// Solo se escriben los campos que hay: asi el archivo guardado se parece a
+  /// lo que devuelve el servidor, que tambien omite lo vacio.
   Map<String, dynamic> aJson() => {
     'id': id,
     'title': titulo,
@@ -95,7 +95,7 @@ class Cancion {
     if (sufijo != null) 'suffix': sufijo,
   };
 
-  /// `3:07`, o guion cuando el servidor no informó la duración.
+  /// `3:07`, o guion cuando el servidor no informo la duracion.
   String get duracionFormateada {
     final segundos = duracion;
     if (segundos == null) return '—';
@@ -105,7 +105,7 @@ class Cancion {
   }
 }
 
-/// Lo que devuelve una búsqueda: los tres tipos juntos, como los entrega
+/// Lo que devuelve una busqueda: los tres tipos juntos, como los entrega
 /// `search3` en una sola llamada.
 class ResultadoBusqueda {
   const ResultadoBusqueda({
@@ -150,8 +150,8 @@ class Favoritos {
   /// Ids de todo lo marcado, sin importar el tipo. Es lo que consultan los
   /// corazones de la interfaz para saber si tienen que estar rellenos.
   ///
-  /// Los ids de Subsonic son únicos entre tipos, así que un solo conjunto
-  /// alcanza y evita tener que saber de qué tipo es cada cosa al preguntar.
+  /// Los ids de Subsonic son unicos entre tipos, asi que un solo conjunto
+  /// alcanza y evita tener que saber de que tipo es cada cosa al preguntar.
   Set<String> get ids => {
     for (final c in canciones) c.id,
     for (final a in albumes) a.id,
@@ -175,7 +175,7 @@ class Favoritos {
 ///
 /// A diferencia de los favoritos, el orden importa: es lo que distingue una
 /// playlist de una bolsa de canciones marcadas. Subsonic lo guarda por
-/// posición, así que todas las operaciones de edición hablan de índices.
+/// posicion, asi que todas las operaciones de edicion hablan de indices.
 class Playlist {
   const Playlist({
     required this.id,
@@ -192,7 +192,7 @@ class Playlist {
   final String? coverArt;
   final int? cantidadCanciones;
 
-  /// Duración total en segundos.
+  /// Duracion total en segundos.
   final int? duracion;
 
   factory Playlist.desdeJson(Map<String, dynamic> json) {
@@ -206,13 +206,13 @@ class Playlist {
     );
   }
 
-  /// `12 canciones · 48 min`, para el subtítulo de la fila y de la pantalla.
+  /// `12 canciones · 48 min`, para el subtitulo de la fila y de la pantalla.
   ///
-  /// Omite la duración cuando el servidor no la informa (una playlist recién
-  /// creada, todavía vacía) en vez de mostrar un `0 min` que confunde.
+  /// Omite la duracion cuando el servidor no la informa (una playlist recien
+  /// creada, todavia vacia) en vez de mostrar un `0 min` que confunde.
   String get resumen {
     final cantidad = cantidadCanciones ?? 0;
-    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
 
     final total = duracion;
     if (total == null || total <= 0) return temas;

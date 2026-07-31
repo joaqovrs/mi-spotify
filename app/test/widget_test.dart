@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mi_spotify/core/auth_storage.dart';
+import 'package:mi_spotify/core/config.dart';
 import 'package:mi_spotify/core/subsonic_client.dart';
 
 void main() {
@@ -13,8 +13,8 @@ void main() {
 
     test('respeta https cuando ya viene puesto', () {
       expect(
-        SubsonicClient.normalizarUrl('https://mi-spotify.ts.net'),
-        'https://mi-spotify.ts.net',
+        SubsonicClient.normalizarUrl('https://mimusic.duckdns.org'),
+        'https://mimusic.duckdns.org',
       );
     });
 
@@ -27,8 +27,8 @@ void main() {
 
     test('limpia espacios alrededor', () {
       expect(
-        SubsonicClient.normalizarUrl('  100.91.22.33:4533  '),
-        'http://100.91.22.33:4533',
+        SubsonicClient.normalizarUrl('  mimusic.duckdns.org:34533  '),
+        'http://mimusic.duckdns.org:34533',
       );
     });
   });
@@ -40,17 +40,17 @@ void main() {
       password: 'secreta',
     );
 
-    test('apunta a /rest/ y manda los parámetros de Subsonic', () {
+    test('apunta a /rest/ y manda los parametros de Subsonic', () {
       final uri = cliente.construirUri('ping');
 
       expect(uri.path, '/rest/ping');
       expect(uri.queryParameters['u'], 'joaco');
       expect(uri.queryParameters['v'], '1.16.1');
-      expect(uri.queryParameters['c'], 'miSpotify');
+      expect(uri.queryParameters['c'], 'MiMusic');
       expect(uri.queryParameters['f'], 'json');
     });
 
-    test('nunca incluye la contraseña en texto plano', () {
+    test('nunca incluye la contrasena en texto plano', () {
       final uri = cliente.construirUri('ping');
 
       expect(uri.toString().contains('secreta'), isFalse);
@@ -66,10 +66,10 @@ void main() {
     });
   });
 
-  group('doble dirección', () {
+  group('doble direccion', () {
     test('antes de conectarse prefiere la primera de la lista', () {
       final cliente = SubsonicClient(
-        urls: ['http://192.168.1.194:4533', 'http://100.91.22.33:4533'],
+        urls: ['http://192.168.1.194:4533', 'http://mimusic.duckdns.org:34533'],
         usuario: 'joaco',
         password: 'secreta',
       );
@@ -78,28 +78,26 @@ void main() {
       expect(cliente.construirUri('ping').host, '192.168.1.194');
     });
 
-    test('Credenciales pone la local antes que la remota', () {
-      const credenciales = Credenciales(
-        urlRemota: 'http://100.91.22.33:4533',
-        urlLocal: 'http://192.168.1.194:4533',
-        usuario: 'joaco',
-        password: 'secreta',
-      );
-
-      expect(credenciales.urls, [
-        'http://192.168.1.194:4533',
-        'http://100.91.22.33:4533',
-      ]);
+    test('Servidor prueba la local antes que la remota', () {
+      // El orden importa: al reves, en casa saldria a internet para volver a
+      // entrar por el router pudiendo ir directo.
+      expect(Servidor.urls, [Servidor.urlLocal, Servidor.urlRemota]);
     });
 
-    test('sin dirección local queda solo la remota', () {
-      const credenciales = Credenciales(
-        urlRemota: 'http://100.91.22.33:4533',
-        usuario: 'joaco',
-        password: 'secreta',
-      );
+    test('las direcciones estan normalizadas', () {
+      for (final url in [
+        Servidor.urlLocal,
+        Servidor.urlRemota,
+        Servidor.urlRegistro,
+      ]) {
+        expect(SubsonicClient.normalizarUrl(url), url);
+      }
+    });
 
-      expect(credenciales.urls, ['http://100.91.22.33:4533']);
+    test('el registro no comparte puerto con Navidrome', () {
+      // Son dos servicios distintos detras de dos port forwards distintos;
+      // si coincidieran, uno de los dos quedaria inalcanzable.
+      expect(Servidor.urlRegistro, isNot(Servidor.urlRemota));
     });
   });
 }

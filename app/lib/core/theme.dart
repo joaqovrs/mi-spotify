@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 /// Paleta y temas de la app.
 ///
-/// El diseño se apoya en mucho blanco (o casi negro en oscuro), tipografía
-/// pesada para los títulos y un único color de acento naranja que marca lo
-/// activo: pestaña seleccionada, progreso, botón de reproducir.
+/// El diseño se apoya en mucho blanco (o casi negro en oscuro), tipografia
+/// pesada para los titulos y un unico color de acento naranja que marca lo
+/// activo: pestaña seleccionada, progreso, boton de reproducir.
 class AppColors {
   const AppColors._();
 
   /// Acento de marca. Se usa para rellenos e indicadores, no para texto chico
-  /// sobre fondo claro (ahí no llega a contraste suficiente).
+  /// sobre fondo claro (ahi no llega a contraste suficiente).
   static const Color naranja = Color(0xFFFF6B2C);
 
   /// Variante oscurecida, para texto e iconos naranjas sobre fondo claro.
@@ -163,14 +163,14 @@ class AppTheme {
 
   static TextTheme _tipografia(Color texto, Color textoSuave) {
     return TextTheme(
-      // Títulos grandes de pantalla: "Descubrir", "Tu biblioteca".
+      // Titulos grandes de pantalla: "Descubrir", "Tu biblioteca".
       displaySmall: TextStyle(
         fontSize: 30,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.8,
         color: texto,
       ),
-      // Encabezados de sección: "Agregados recientemente".
+      // Encabezados de seccion: "Agregados recientemente".
       titleLarge: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w700,
@@ -184,7 +184,7 @@ class AppTheme {
       ),
       bodyLarge: TextStyle(fontSize: 15, color: texto),
       bodyMedium: TextStyle(fontSize: 14, color: texto),
-      // Subtítulos: artista, cantidad de temas.
+      // Subtitulos: artista, cantidad de temas.
       bodySmall: TextStyle(fontSize: 13, color: textoSuave),
       labelLarge: TextStyle(
         fontSize: 14,

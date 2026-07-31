@@ -5,10 +5,10 @@ import '../../core/subsonic_client.dart';
 import '../../core/theme.dart';
 import '../../state/favoritos_providers.dart';
 
-/// Corazón que marca y desmarca favoritos.
+/// Corazon que marca y desmarca favoritos.
 ///
-/// Consulta el conjunto de ids marcados, así sirve igual para una canción, un
-/// álbum o un artista sin tener que decirle de qué tipo se trata.
+/// Consulta el conjunto de ids marcados, asi sirve igual para una cancion, un
+/// album o un artista sin tener que decirle de que tipo se trata.
 class BotonFavorito extends ConsumerWidget {
   const BotonFavorito({
     required this.id,
@@ -42,7 +42,7 @@ class BotonFavorito extends ConsumerWidget {
     try {
       await onAlternar();
     } on SubsonicException catch (e) {
-      // El estado ya volvió atrás solo; acá solo hay que contar qué pasó.
+      // El estado ya volvio atras solo; aqui solo hay que contar que paso.
       mensajero
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(e.mensaje)));

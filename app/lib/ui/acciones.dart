@@ -11,8 +11,8 @@ import 'widgets/tarjetas.dart';
 
 /// Encola canciones y confirma con un aviso.
 ///
-/// El aviso importa: agregar al final de una cola larga no produce ningún
-/// cambio visible, así que sin confirmación parece que el botón no hizo nada.
+/// El aviso importa: agregar al final de una cola larga no produce ningun
+/// cambio visible, asi que sin confirmacion parece que el boton no hizo nada.
 Future<void> encolar(
   BuildContext context,
   WidgetRef ref,
@@ -36,7 +36,7 @@ Future<void> encolar(
 
 // --------------------------------------------------------------- A playlists
 
-/// Lo que se eligió en la hoja de playlists.
+/// Lo que se eligio en la hoja de playlists.
 sealed class _Eleccion {
   const _Eleccion();
 }
@@ -53,7 +53,7 @@ class _Nueva extends _Eleccion {
 
 /// Abre la hoja para mandar canciones a una playlist.
 ///
-/// Sirve tanto para una canción suelta como para un álbum entero, y permite
+/// Sirve tanto para una cancion suelta como para un album entero, y permite
 /// crear la playlist en el momento: obligar a ir hasta la biblioteca a crearla
 /// primero rompe el hilo de lo que estabas haciendo.
 Future<void> agregarAPlaylist(
@@ -105,7 +105,7 @@ Future<void> agregarAPlaylist(
 }
 
 String _cuantas(int cantidad) =>
-    cantidad == 1 ? 'Canción guardada' : '$cantidad canciones guardadas';
+    cantidad == 1 ? 'Cancion guardada' : '$cantidad canciones guardadas';
 
 class _HojaPlaylists extends ConsumerWidget {
   const _HojaPlaylists();
@@ -117,7 +117,7 @@ class _HojaPlaylists extends ConsumerWidget {
 
     return SafeArea(
       child: ConstrainedBox(
-        // Sin tope, con muchas playlists la hoja taparía toda la pantalla.
+        // Sin tope, con muchas playlists la hoja taparia toda la pantalla.
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.62,
         ),
@@ -147,7 +147,7 @@ class _HojaPlaylists extends ConsumerWidget {
                 data: (playlists) {
                   if (playlists.isEmpty) {
                     return const EstadoVacio(
-                      mensaje: 'Todavía no tenés playlists. Creá la primera.',
+                      mensaje: 'Todavia no tienes playlists. Crea la primera.',
                       icono: Icons.queue_music_rounded,
                     );
                   }
@@ -171,9 +171,9 @@ class _HojaPlaylists extends ConsumerWidget {
   }
 }
 
-// ----------------------------------------------------------------- Diálogos
+// ----------------------------------------------------------------- Dialogos
 
-/// Pide un nombre de playlist. Devuelve null si se canceló.
+/// Pide un nombre de playlist. Devuelve null si se cancelo.
 Future<String?> pedirNombrePlaylist(
   BuildContext context, {
   required String titulo,
@@ -228,7 +228,7 @@ class _DialogoNombreState extends State<_DialogoNombre> {
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
         textInputAction: TextInputAction.done,
-        // Sin esto habría que bajar el teclado para llegar al botón.
+        // Sin esto habria que bajar el teclado para llegar al boton.
         onSubmitted: (_) => _confirmar(),
         decoration: const InputDecoration(hintText: 'Nombre de la playlist'),
       ),
@@ -237,7 +237,7 @@ class _DialogoNombreState extends State<_DialogoNombre> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        // Escucha al controlador para poder deshabilitarse con el campo vacío.
+        // Escucha al controlador para poder deshabilitarse con el campo vacio.
         ValueListenableBuilder<TextEditingValue>(
           valueListenable: _controlador,
           builder: (context, valor, _) => TextButton(
@@ -250,7 +250,7 @@ class _DialogoNombreState extends State<_DialogoNombre> {
   }
 }
 
-/// Confirmación para acciones que no se pueden deshacer, y que además borran
+/// Confirmacion para acciones que no se pueden deshacer, y que ademas borran
 /// algo del servidor.
 Future<bool> confirmar(
   BuildContext context, {

@@ -7,7 +7,7 @@ void main() {
   final artista = Artista.desdeJson({'id': 'ar-1', 'name': 'Alguien'});
 
   group('Favoritos', () {
-    test('el vacío no tiene ids', () {
+    test('el vacio no tiene ids', () {
       const favoritos = Favoritos.vacio();
 
       expect(favoritos.estaVacio, isTrue);
@@ -21,8 +21,8 @@ void main() {
         artistas: [artista],
       );
 
-      // Un único conjunto permite que el corazón pregunte por id sin saber de
-      // qué tipo es lo que está mostrando.
+      // Un unico conjunto permite que el corazon pregunte por id sin saber de
+      // que tipo es lo que esta mostrando.
       expect(favoritos.ids, {'c-1', 'al-1', 'ar-1'});
       expect(favoritos.estaVacio, isFalse);
     });
@@ -42,7 +42,7 @@ void main() {
       expect(sinCanciones.ids, {'al-1', 'ar-1'});
     });
 
-    test('con un solo tipo marcado sigue sin estar vacío', () {
+    test('con un solo tipo marcado sigue sin estar vacio', () {
       final soloAlbumes = Favoritos(
         canciones: const [],
         albumes: [album],

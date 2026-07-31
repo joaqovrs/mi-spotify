@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/subsonic_client.dart';
-import '../core/theme.dart';
 import '../state/sesion_providers.dart';
+import 'registro_screen.dart';
+import 'widgets/marca.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -14,8 +15,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _urlRemotaCtrl = TextEditingController();
-  final _urlLocalCtrl = TextEditingController();
   final _usuarioCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
@@ -25,8 +24,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
-    _urlRemotaCtrl.dispose();
-    _urlLocalCtrl.dispose();
     _usuarioCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -44,8 +41,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(sesionProvider.notifier)
           .iniciarSesion(
-            urlRemota: _urlRemotaCtrl.text,
-            urlLocal: _urlLocalCtrl.text,
             usuario: _usuarioCtrl.text,
             password: _passwordCtrl.text,
           );
@@ -55,10 +50,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) setState(() => _error = e.mensaje);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Ocurrió un error inesperado al conectar.');
+        setState(() => _error = 'Ocurrio un error inesperado al conectar.');
       }
     } finally {
       if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  Future<void> _irARegistro() async {
+    final usuarioCreado = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const RegistroScreen()),
+    );
+
+    // Vuelve con el usuario recien creado: se deja puesto para que solo tenga
+    // que escribir la contrasena. Si cancelo, no se toca nada.
+    if (usuarioCreado != null && mounted) {
+      setState(() {
+        _usuarioCtrl.text = usuarioCreado;
+        _error = null;
+      });
     }
   }
 
@@ -78,53 +88,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _Logo(),
+                    const LogoMarca(),
                     const SizedBox(height: 28),
-                    Text('mi spotify', style: textos.displaySmall),
+                    Text('Mi Music', style: textos.displaySmall),
                     const SizedBox(height: 6),
                     Text(
-                      'Conectate a tu servidor de música.',
+                      'Entra con tu cuenta para escuchar tu musica.',
                       style: textos.bodySmall,
                     ),
                     const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _urlRemotaCtrl,
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Servidor (desde afuera)',
-                        hintText: 'mimusic.duckdns.org:34533',
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Ingresá la dirección del servidor'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _urlLocalCtrl,
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'En tu red de casa (opcional)',
-                        hintText: '192.168.1.194:4533',
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Si la completás, en casa se conecta por acá — más rápido '
-                      'y sin salir a internet.',
-                      style: textos.bodySmall,
-                    ),
-                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _usuarioCtrl,
                       autocorrect: false,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(labelText: 'Usuario'),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Ingresá tu usuario'
+                          ? 'Escribe tu usuario'
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -134,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _entrar(),
                       decoration: InputDecoration(
-                        labelText: 'Contraseña',
+                        labelText: 'Contrasena',
                         suffixIcon: IconButton(
                           icon: Icon(
                             _verPassword
@@ -146,12 +125,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       validator: (v) => (v == null || v.isEmpty)
-                          ? 'Ingresá tu contraseña'
+                          ? 'Escribe tu contrasena'
                           : null,
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 18),
-                      _MensajeError(_error!),
+                      MensajeError(_error!),
                     ],
                     const SizedBox(height: 26),
                     FilledButton(
@@ -167,12 +146,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           : const Text('Entrar'),
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Fuera de casa se conecta por la dirección de arriba; '
-                      'no hace falta nada más en el teléfono.',
-                      textAlign: TextAlign.center,
-                      style: textos.bodySmall,
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: _cargando ? null : _irARegistro,
+                      child: const Text('No tengo cuenta, quiero crear una'),
                     ),
                   ],
                 ),
@@ -180,65 +157,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Logo extends StatelessWidget {
-  const _Logo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 76,
-      width: 76,
-      decoration: BoxDecoration(
-        color: AppColors.naranja,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: const Icon(
-        Icons.music_note_rounded,
-        color: Colors.white,
-        size: 40,
-      ),
-    );
-  }
-}
-
-class _MensajeError extends StatelessWidget {
-  const _MensajeError(this.mensaje);
-
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    final colores = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colores.errorContainer,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 20,
-            color: colores.onErrorContainer,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              mensaje,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colores.onErrorContainer,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

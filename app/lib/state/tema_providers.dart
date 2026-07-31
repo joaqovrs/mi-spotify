@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Preferencia de tema: Claro / Oscuro / Seguir al sistema.
 ///
-/// Se guarda en preferencias comunes (no es información sensible) y se
+/// Se guarda en preferencias comunes (no es informacion sensible) y se
 /// restaura al abrir la app.
 final temaProvider = StateNotifierProvider<TemaNotifier, ThemeMode>(
   (ref) => TemaNotifier()..restaurar(),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// no encolen dos mensajes que se pisan.
 ///
 /// Vive suelto y no dentro de `acciones.dart` porque lo usan tanto las acciones
-/// como los widgets, y si estuviera allá los imports se harían circulares.
+/// como los widgets, y si estuviera alli los imports se harian circulares.
 void avisar(ScaffoldMessengerState mensajero, String texto) {
   mensajero
     ..hideCurrentSnackBar()

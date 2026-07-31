@@ -26,7 +26,7 @@ void main() {
       expect(playlist.resumen, '0 canciones');
     });
 
-    test('una playlist vacía no muestra "0 min"', () {
+    test('una playlist vacia no muestra "0 min"', () {
       final playlist = Playlist.desdeJson({
         'id': 'pl-3',
         'name': 'Nueva',
@@ -37,7 +37,7 @@ void main() {
       expect(playlist.resumen, '0 canciones');
     });
 
-    test('singular con una sola canción', () {
+    test('singular con una sola cancion', () {
       final playlist = Playlist.desdeJson({
         'id': 'pl-4',
         'name': 'Una sola',
@@ -45,7 +45,7 @@ void main() {
         'duration': 200,
       });
 
-      expect(playlist.resumen, '1 canción · 3 min');
+      expect(playlist.resumen, '1 cancion · 3 min');
     });
 
     test('copiarCon solo cambia el nombre', () {
@@ -75,7 +75,7 @@ void main() {
       expect(reordenada(['a', 'b', 'c'], 2, 0), ['c', 'a', 'b']);
     });
 
-    test('mover al final deja el elemento último', () {
+    test('mover al final deja el elemento ultimo', () {
       expect(reordenada(['a', 'b', 'c'], 0, 2), ['b', 'c', 'a']);
     });
 

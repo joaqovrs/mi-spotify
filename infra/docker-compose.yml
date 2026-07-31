@@ -12,3 +12,24 @@ services:
     volumes:
       - ./data:/data
       - /srv/musica:/music:ro
+
+  # Crea usuarios en Navidrome sin que la clave de admin salga del servidor.
+  # Las variables salen de infra/.env, que no se versiona (ver .env.ejemplo).
+  registro:
+    image: python:3.12-alpine
+    container_name: registro
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      NAVIDROME_URL: http://navidrome:4533
+      ND_ADMIN_USER: ${ND_ADMIN_USER}
+      ND_ADMIN_PASS: ${ND_ADMIN_PASS}
+      CODIGO_INVITACION: ${CODIGO_INVITACION}
+      PUERTO: 8080
+    volumes:
+      # Solo lectura: el servicio nunca escribe en disco.
+      - ./registro:/app:ro
+    command: ["python", "/app/servidor.py"]
+    depends_on:
+      - navidrome

@@ -70,7 +70,7 @@ class AjustesScreen extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: () => _confirmarCierre(context, ref),
               icon: const Icon(Icons.logout_rounded),
-              label: const Text('Cerrar sesión'),
+              label: const Text('Cerrar sesion'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(
@@ -89,9 +89,9 @@ class AjustesScreen extends ConsumerWidget {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cerrar sesión'),
+        title: const Text('Cerrar sesion'),
         content: const Text(
-          'Se van a borrar las credenciales guardadas en este teléfono.',
+          'Se van a borrar las credenciales guardadas en este telefono.',
         ),
         actions: [
           TextButton(
@@ -100,7 +100,7 @@ class AjustesScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cerrar sesión'),
+            child: const Text('Cerrar sesion'),
           ),
         ],
       ),

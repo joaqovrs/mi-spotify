@@ -7,11 +7,11 @@ import '../../state/reproductor_providers.dart';
 import '../reproductor_screen.dart';
 import 'portada.dart';
 
-/// Barra compacta con lo que suena, fija encima de la navegación.
+/// Barra compacta con lo que suena, fija encima de la navegacion.
 ///
-/// No está en la referencia de diseño, pero sin ella hay que volver a la
+/// No esta en la referencia de diseño, pero sin ella hay que volver a la
 /// pantalla completa cada vez que se quiere pausar: es la pieza que hace que
-/// la app se sienta cómoda.
+/// la app se sienta comoda.
 class MiniReproductor extends ConsumerWidget {
   const MiniReproductor({super.key});
 
@@ -19,7 +19,7 @@ class MiniReproductor extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cancion = ref.watch(cancionActualProvider).value;
 
-    // Antes de la primera reproducción no ocupa espacio.
+    // Antes de la primera reproduccion no ocupa espacio.
     if (cancion == null) return const SizedBox.shrink();
 
     final textos = Theme.of(context).textTheme;

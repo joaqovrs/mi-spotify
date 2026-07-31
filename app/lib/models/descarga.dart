@@ -1,10 +1,10 @@
 import 'biblioteca.dart';
 
-/// Una canción guardada en el teléfono.
+/// Una cancion guardada en el telefono.
 ///
 /// Se guarda una copia de los **metadatos**, no solo la ruta del archivo: la
 /// pestaña de descargas tiene que poder listarse y reproducirse con el servidor
-/// apagado, y sin esto habría que pedirle los títulos a Navidrome justo cuando
+/// apagado, y sin esto habria que pedirle los titulos a Navidrome justo cuando
 /// no se lo puede alcanzar.
 class Descarga {
   const Descarga({
@@ -19,13 +19,13 @@ class Descarga {
   /// Ruta absoluta del audio, dentro del almacenamiento privado de la app.
   final String archivo;
 
-  /// Ruta absoluta de la carátula. Null cuando el álbum no tenía o cuando la
-  /// imagen falló: es un extra, nunca motivo para dar la descarga por perdida.
+  /// Ruta absoluta de la caratula. Null cuando el album no tenia o cuando la
+  /// imagen fallo: es un extra, nunca motivo para dar la descarga por perdida.
   final String? portada;
 
-  /// Tamaño del audio en disco. Se guarda al bajarlo para poder mostrar cuánto
+  /// Tamaño del audio en disco. Se guarda al bajarlo para poder mostrar cuanto
   /// espacio ocupa todo sin tener que ir a preguntarle al sistema de archivos
-  /// por cada canción cada vez que se abre la pantalla.
+  /// por cada cancion cada vez que se abre la pantalla.
   final int bytes;
 
   Map<String, dynamic> aJson() => {
@@ -47,7 +47,7 @@ class Descarga {
   }
 }
 
-/// `4,2 MB`. En múltiplos de 1024, que es como informa el espacio Android.
+/// `4,2 MB`. En multiplos de 1024, que es como informa el espacio Android.
 String formatearTamano(int bytes) {
   const unidades = ['B', 'KB', 'MB', 'GB'];
 

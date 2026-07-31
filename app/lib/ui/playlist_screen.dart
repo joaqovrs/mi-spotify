@@ -17,8 +17,8 @@ import 'widgets/tarjetas.dart';
 
 /// Detalle de una playlist: sus temas en orden, y las ediciones encima.
 ///
-/// El orden se cambia arrastrando; quitar y renombrar salen de los menús. Todo
-/// se aplica primero en pantalla y se confirma contra el servidor después.
+/// El orden se cambia arrastrando; quitar y renombrar salen de los menus. Todo
+/// se aplica primero en pantalla y se confirma contra el servidor despues.
 class PlaylistScreen extends ConsumerWidget {
   const PlaylistScreen({required this.playlist, super.key});
 
@@ -35,7 +35,7 @@ class PlaylistScreen extends ConsumerWidget {
         title: Text(actual.nombre),
         actions: [
           PopupMenuButton<void>(
-            tooltip: 'Más opciones',
+            tooltip: 'Mas opciones',
             itemBuilder: (_) => [
               PopupMenuItem<void>(
                 onTap: () => _renombrar(context, ref, actual),
@@ -97,10 +97,10 @@ class PlaylistScreen extends ConsumerWidget {
     );
   }
 
-  /// La versión más fresca de la playlist.
+  /// La version mas fresca de la playlist.
   ///
-  /// La que llega por constructor es la que se tocó en el listado: si desde
-  /// acá se la renombra, esa copia queda con el nombre viejo.
+  /// La que llega por constructor es la que se toco en el listado: si desde
+  /// aqui se la renombra, esa copia queda con el nombre viejo.
   Playlist _vigente(WidgetRef ref) {
     final lista = ref.watch(playlistsProvider).value ?? const <Playlist>[];
     for (final p in lista) {
@@ -189,7 +189,7 @@ class _Contenido extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 // El resumen se arma con lo que hay en pantalla y no con el
-                // conteo del servidor: si acabás de sacar un tema, el número
+                // conteo del servidor: si acabas de sacar un tema, el numero
                 // tiene que bajar en el acto.
                 Text(_resumen(), style: textos.bodySmall),
                 const SizedBox(height: 18),
@@ -215,7 +215,7 @@ class _Contenido extends ConsumerWidget {
                 if (canciones.length > 1) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'Mantené presionada una canción para cambiarla de lugar.',
+                    'Mantene presionada una cancion para cambiarla de lugar.',
                     textAlign: TextAlign.center,
                     style: textos.bodySmall,
                   ),
@@ -228,7 +228,7 @@ class _Contenido extends ConsumerWidget {
           const SliverToBoxAdapter(
             child: EstadoVacio(
               mensaje:
-                  'Esta playlist está vacía. Guardá canciones desde el menú '
+                  'Esta playlist esta vacia. Guarda canciones desde el menu '
                   '"···" de cualquier tema.',
               icono: Icons.queue_music_rounded,
             ),
@@ -242,7 +242,7 @@ class _Contenido extends ConsumerWidget {
 
               return ReorderableDelayedDragStartListener(
                 // La clave va por instancia y no por id: una playlist admite
-                // la misma canción repetida y las claves tienen que ser únicas.
+                // la misma cancion repetida y las claves tienen que ser unicas.
                 key: ObjectKey(cancion),
                 index: i,
                 child: FilaCancion(
@@ -265,8 +265,8 @@ class _Contenido extends ConsumerWidget {
     );
   }
 
-  /// Reproduce marcando de dónde salió la cola, para que reordenar o quitar
-  /// temas después se aplique también a lo que está sonando.
+  /// Reproduce marcando de donde salio la cola, para que reordenar o quitar
+  /// temas despues se aplique tambien a lo que esta sonando.
   Future<void> _reproducirDesde(WidgetRef ref, int indice) {
     return reproducir(
       ref,
@@ -278,7 +278,7 @@ class _Contenido extends ConsumerWidget {
 
   String _resumen() {
     final cantidad = canciones.length;
-    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
 
     var total = 0;
     for (final c in canciones) {
@@ -319,7 +319,7 @@ class _Contenido extends ConsumerWidget {
     } on SubsonicException catch (e) {
       avisar(mensajero, e.mensaje);
     } catch (_) {
-      avisar(mensajero, 'No se pudo quitar la canción.');
+      avisar(mensajero, 'No se pudo quitar la cancion.');
     }
   }
 }

@@ -9,8 +9,8 @@ import 'sesion_providers.dart';
 
 /// Las playlists del usuario, tal como las guarda el servidor.
 ///
-/// Igual que con los favoritos, esto es la única fuente de verdad: el servidor
-/// manda y la app no inventa listas locales. La diferencia es que acá el
+/// Igual que con los favoritos, esto es la unica fuente de verdad: el servidor
+/// manda y la app no inventa listas locales. La diferencia es que aqui el
 /// contenido de cada playlist vive aparte, en [cancionesDePlaylistProvider],
 /// porque `getPlaylists` devuelve los nombres pero no las canciones.
 final playlistsProvider =
@@ -45,22 +45,22 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
     }
   }
 
-  /// Vuelve a pedir la lista para que los conteos y duraciones queden al día
-  /// después de una edición, sin pasar por el estado de carga.
+  /// Vuelve a pedir la lista para que los conteos y duraciones queden al dia
+  /// despues de una edicion, sin pasar por el estado de carga.
   ///
-  /// Si el refresco falla se dejan los datos viejos a propósito: la edición ya
-  /// se guardó en el servidor, sería absurdo tapar la pantalla con un error
+  /// Si el refresco falla se dejan los datos viejos a proposito: la edicion ya
+  /// se guardo en el servidor, seria absurdo tapar la pantalla con un error
   /// por no haber podido actualizar un contador.
   Future<void> sincronizar() async {
     try {
       final lista = await _cliente.playlists();
       if (mounted) state = AsyncData(lista);
     } catch (_) {
-      // Se queda lo que había.
+      // Se queda lo que habia.
     }
   }
 
-  /// Crea la playlist y devuelve la que quedó guardada, ya con su id.
+  /// Crea la playlist y devuelve la que quedo guardada, ya con su id.
   Future<Playlist> crear({
     required String nombre,
     List<Cancion> canciones = const [],
@@ -85,8 +85,8 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
       cancionIds: [for (final c in canciones) c.id],
     );
 
-    // Si es la playlist que está sonando, lo agregado tiene que quedar también
-    // al final de la cola, no recién la próxima vez que se toque reproducir.
+    // Si es la playlist que esta sonando, lo agregado tiene que quedar tambien
+    // al final de la cola, no recien la proxima vez que se toque reproducir.
     final handler = _ref.read(reproductorProvider);
     if (handler.origenCola == origenDePlaylist(playlistId)) {
       final descargadas = _ref.read(archivosDescargadosProvider);
@@ -96,13 +96,13 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
       ]);
     }
 
-    // Si la pantalla de esa playlist está abierta detrás, tiene que enterarse.
+    // Si la pantalla de esa playlist esta abierta detras, tiene que enterarse.
     _ref.invalidate(cancionesDePlaylistProvider(playlistId));
     await sincronizar();
   }
 
-  /// Renombra mostrando el nombre nuevo en el acto, igual que el corazón de
-  /// favoritos: si el servidor rechaza el cambio, vuelve atrás solo.
+  /// Renombra mostrando el nombre nuevo en el acto, igual que el corazon de
+  /// favoritos: si el servidor rechaza el cambio, vuelve atras solo.
   Future<void> renombrar(Playlist playlist, String nombre) async {
     final actual = state.value;
     if (actual == null) return;
@@ -140,8 +140,8 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
 
 /// Contenido de una playlist, con las ediciones aplicadas primero en pantalla.
 ///
-/// Quitar y reordenar tienen que sentirse instantáneos — se hacen arrastrando
-/// o tocando, y esperar el viaje al servidor delata la demora del túnel.
+/// Quitar y reordenar tienen que sentirse instantaneos — se hacen arrastrando
+/// o tocando, y esperar el viaje al servidor delata la demora del tunel.
 class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
   PlaylistDetalleNotifier(this._cliente, this._ref, this.playlistId)
     : super(const AsyncLoading());
@@ -160,10 +160,10 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
     }
   }
 
-  /// Saca la canción que está en [indice].
+  /// Saca la cancion que esta en [indice].
   ///
-  /// Va por posición y no por id porque una playlist admite la misma canción
-  /// repetida: por id se borraría también la otra.
+  /// Va por posicion y no por id porque una playlist admite la misma cancion
+  /// repetida: por id se borraria tambien la otra.
   Future<void> quitar(int indice) async {
     final actual = state.value;
     if (actual == null || indice < 0 || indice >= actual.length) return;
@@ -183,7 +183,7 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
     }
   }
 
-  /// Mueve la canción de [desde] a [hasta], con los índices ya definitivos
+  /// Mueve la cancion de [desde] a [hasta], con los indices ya definitivos
   /// que entrega `onReorderItem`.
   Future<void> reordenar(int desde, int hasta) async {
     final actual = state.value;
@@ -204,17 +204,17 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
     }
   }
 
-  /// True cuando lo que está sonando salió justamente de esta playlist, y por
-  /// lo tanto la cola es un calco de la lista que se está editando.
+  /// True cuando lo que esta sonando salio justamente de esta playlist, y por
+  /// lo tanto la cola es un calco de la lista que se esta editando.
   ///
   /// Sin este control, reordenar una playlist cualquiera mientras suena otra
-  /// mezclaría la cola equivocada.
+  /// mezclaria la cola equivocada.
   bool get _esLaQueSuena =>
       _handler.origenCola == origenDePlaylist(playlistId);
 
   ReproductorHandler get _handler => _ref.read(reproductorProvider);
 
-  /// La cantidad de canciones cambió, así que el listado de playlists quedó
+  /// La cantidad de canciones cambio, asi que el listado de playlists quedo
   /// desactualizado.
   void _refrescarLista() {
     _ref.read(playlistsProvider.notifier).sincronizar();
@@ -223,9 +223,9 @@ class PlaylistDetalleNotifier extends StateNotifier<AsyncValue<List<Cancion>>> {
 
 /// Devuelve una copia con el elemento de [desde] movido a [hasta].
 ///
-/// Los índices son los de `onReorderItem`, que ya vienen compensados por el
+/// Los indices son los de `onReorderItem`, que ya vienen compensados por el
 /// hueco que deja el elemento arrastrado. (El viejo `onReorder`, deprecado en
-/// Flutter 3.44, informaba el destino sin ese ajuste y había que restarle uno.)
+/// Flutter 3.44, informaba el destino sin ese ajuste y habia que restarle uno.)
 List<T> reordenada<T>(List<T> original, int desde, int hasta) {
   final copia = [...original];
   copia.insert(hasta, copia.removeAt(desde));

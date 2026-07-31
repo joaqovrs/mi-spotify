@@ -1,5 +1,5 @@
 name: mi_spotify
-description: "Cliente Android para el servidor de musica propio (API Subsonic / Navidrome)."
+description: "Mi Music: cliente Android del servidor de musica propio (API Subsonic / Navidrome)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

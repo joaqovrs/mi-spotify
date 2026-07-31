@@ -9,7 +9,7 @@ import 'acciones.dart';
 import 'widgets/boton_favorito.dart';
 import 'widgets/portada.dart';
 
-/// Pantalla completa de reproducción.
+/// Pantalla completa de reproduccion.
 class ReproductorScreen extends ConsumerWidget {
   const ReproductorScreen({super.key});
 
@@ -36,7 +36,7 @@ class ReproductorScreen extends ConsumerWidget {
         title: const Text('Reproduciendo'),
         actions: [
           PopupMenuButton<void>(
-            tooltip: 'Más opciones',
+            tooltip: 'Mas opciones',
             itemBuilder: (_) => [
               PopupMenuItem<void>(
                 onTap: () =>
@@ -67,8 +67,8 @@ class ReproductorScreen extends ConsumerWidget {
               const Spacer(flex: 2),
               Row(
                 children: [
-                  // Un hueco del mismo ancho que el corazón, para que el
-                  // título quede centrado de verdad y no corrido hacia la
+                  // Un hueco del mismo ancho que el corazon, para que el
+                  // titulo quede centrado de verdad y no corrido hacia la
                   // izquierda.
                   const SizedBox(width: 48),
                   Expanded(
