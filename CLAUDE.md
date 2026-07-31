@@ -92,9 +92,11 @@ en la propia Debian. Ver Fase 5.
 | ~~Direccion remota en la app~~ | ✅ Resuelto el 31-07-2026: las direcciones dejaron de ser campos del login y viven en `core/config.dart`. Quien tenia guardada la del tailnet queda arreglado al actualizar el APK. |
 | **Cable de red** | La laptop esta por WiFi (`wlp1s0`); ethernet seria mas estable para 24/7. |
 | **Token de DuckDNS expuesto** | El token quedo a la vista en una captura. El usuario decidio **no regenerarlo** (30-07-2026). Si algun dia se recrea, hay que actualizar `~/duckdns/duck.sh`. |
-| **Port forward del registro** | El servicio ya corre y se probo OK en la red local. Falta la regla `WAN:34534 → 192.168.1.194:8080` (TCP) en el router para poder registrarse desde afuera. |
-| **APK con todo lo nuevo** | Compilar e instalar: nombre Mi Music, icono, login simple y registro. Sin esto el telefono sigue con la version vieja. |
-| **Icono del APK** | Esperando el arte definitivo (imagen nueva o archivo de Figma). Mientras tanto sigue el icono por defecto de Flutter. |
+| **Instalar el APK firmado** | Ya esta en el telefono en `/sdcard/Download/mi-music.apk` (tamaño verificado). ⚠️ **Hay que desinstalar la app primero**: cambio la clave de firma y Android rechaza la actualizacion. Se pierden sesion y descargas. |
+| **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
+| **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
+| **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
+| **Paso 8 del CI/CD** | Ya desbloqueado: falta el workflow que publique el APK firmado en GitHub Releases al taguear, con el keystore como secret del repo. |
 
 ### Datos del servidor
 | Dato | Valor |
