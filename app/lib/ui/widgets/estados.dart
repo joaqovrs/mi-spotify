@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/subsonic_client.dart';
 
-/// Mensaje de error con opción de reintentar.
+/// Mensaje de error con opcion de reintentar.
 class EstadoError extends StatelessWidget {
   const EstadoError({required this.error, this.onReintentar, super.key});
 
@@ -16,7 +16,7 @@ class EstadoError extends StatelessWidget {
 
     final mensaje = error is SubsonicException
         ? (error as SubsonicException).mensaje
-        : 'No se pudo cargar la música.';
+        : 'No se pudo cargar la musica.';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -44,7 +44,7 @@ class EstadoError extends StatelessWidget {
   }
 }
 
-/// Hueco para cuando una sección no tiene nada que mostrar.
+/// Hueco para cuando una seccion no tiene nada que mostrar.
 class EstadoVacio extends StatelessWidget {
   const EstadoVacio({required this.mensaje, this.icono, super.key});
 
@@ -74,7 +74,7 @@ class EstadoVacio extends StatelessWidget {
   }
 }
 
-/// Bloque de carga con la altura de la sección, para que el contenido no
+/// Bloque de carga con la altura de la seccion, para que el contenido no
 /// pegue un salto cuando terminan de llegar los datos.
 class EstadoCargando extends StatelessWidget {
   const EstadoCargando({this.alto = 120, super.key});

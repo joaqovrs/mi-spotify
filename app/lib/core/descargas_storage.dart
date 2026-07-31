@@ -7,11 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/biblioteca.dart';
 import '../models/descarga.dart';
 
-/// Los archivos descargados y el índice que los describe.
+/// Los archivos descargados y el indice que los describe.
 ///
-/// Todo va al almacenamiento **privado** de la app: no hace falta ningún
-/// permiso de Android, no aparece en la galería ni en el reproductor del
-/// sistema, y se limpia solo al desinstalar. El índice, en cambio, vive en
+/// Todo va al almacenamiento **privado** de la app: no hace falta ningun
+/// permiso de Android, no aparece en la galeria ni en el reproductor del
+/// sistema, y se limpia solo al desinstalar. El indice, en cambio, vive en
 /// `shared_preferences`: son unos pocos kilobytes de metadatos y no justifica
 /// traer una base de datos.
 class DescargasStorage {
@@ -19,7 +19,7 @@ class DescargasStorage {
 
   static const String _clave = 'descargas';
 
-  /// Carpeta donde se guardan audios y carátulas, creada si hace falta.
+  /// Carpeta donde se guardan audios y caratulas, creada si hace falta.
   Future<Directory> carpeta() async {
     final base = await getApplicationSupportDirectory();
     final destino = Directory('${base.path}/descargas');
@@ -28,11 +28,11 @@ class DescargasStorage {
     return destino;
   }
 
-  /// Índice guardado, salteando lo que ya no esté en disco.
+  /// Indice guardado, salteando lo que ya no este en disco.
   ///
   /// Un archivo puede desaparecer sin que la app se entere (Android liberando
-  /// espacio, un "borrar datos" a medias), así que el índice se verifica contra
-  /// el disco en vez de creerle: es preferible que una canción figure como no
+  /// espacio, un "borrar datos" a medias), asi que el indice se verifica contra
+  /// el disco en vez de creerle: es preferible que una cancion figure como no
   /// descargada a que al tocarla no suene nada.
   Future<List<Descarga>> leer() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,7 +61,7 @@ class DescargasStorage {
     ]);
   }
 
-  /// Dónde va el audio de una canción, conservando su formato original.
+  /// Donde va el audio de una cancion, conservando su formato original.
   Future<String> rutaDeAudio(Cancion cancion) async {
     final base = await carpeta();
     final extension = cancion.sufijo?.toLowerCase() ?? 'mp3';
@@ -69,8 +69,8 @@ class DescargasStorage {
     return '${base.path}/${nombreSeguro(cancion.id)}.$extension';
   }
 
-  /// Dónde va una carátula. Se nombra por su id de portada y no por canción:
-  /// todo un álbum comparte imagen y no tiene sentido bajarla una vez por tema.
+  /// Donde va una caratula. Se nombra por su id de portada y no por cancion:
+  /// todo un album comparte imagen y no tiene sentido bajarla una vez por tema.
   Future<String> rutaDePortada(String coverArt) async {
     final base = await carpeta();
 
@@ -87,7 +87,7 @@ class DescargasStorage {
 
 /// Deja un identificador de Subsonic usable como nombre de archivo.
 ///
-/// Los ids de Navidrome suelen ser alfanuméricos, pero nada lo garantiza y una
-/// barra en el medio escribiría fuera de la carpeta.
+/// Los ids de Navidrome suelen ser alfanumericos, pero nada lo garantiza y una
+/// barra en el medio escribiria fuera de la carpeta.
 String nombreSeguro(String identificador) =>
     identificador.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');

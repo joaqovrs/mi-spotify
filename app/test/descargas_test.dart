@@ -28,10 +28,10 @@ void main() {
       expect(revivida.sufijo, 'flac');
     });
 
-    test('no escribe los campos que el servidor no mandó', () {
+    test('no escribe los campos que el servidor no mando', () {
       final minima = Cancion.desdeJson({'id': 'c-2', 'title': 'Suelta'});
 
-      // Guardar `null` explícitos engordaría el índice sin aportar nada.
+      // Guardar `null` explicitos engordaria el indice sin aportar nada.
       expect(minima.aJson().containsKey('album'), isFalse);
       expect(minima.aJson().containsKey('coverArt'), isFalse);
       expect(minima.aJson().containsKey('suffix'), isFalse);
@@ -46,7 +46,7 @@ void main() {
       'suffix': 'mp3',
     });
 
-    test('round-trip por el índice', () {
+    test('round-trip por el indice', () {
       final original = Descarga(
         cancion: cancion,
         archivo: '/datos/descargas/c-1.mp3',
@@ -62,7 +62,7 @@ void main() {
       expect(revivida.cancion.titulo, 'Un tema');
     });
 
-    test('sin carátula sigue siendo una descarga válida', () {
+    test('sin caratula sigue siendo una descarga valida', () {
       final sinPortada = Descarga(
         cancion: cancion,
         archivo: '/datos/descargas/c-1.mp3',
@@ -83,7 +83,7 @@ void main() {
       expect(formatearTamano(4404019), '4,2 MB');
     });
 
-    test('escala hasta GB y no más', () {
+    test('escala hasta GB y no mas', () {
       expect(formatearTamano(3 * 1024 * 1024 * 1024), '3,0 GB');
     });
 
@@ -93,12 +93,12 @@ void main() {
   });
 
   group('nombreSeguro', () {
-    test('deja pasar los ids alfanuméricos de Navidrome', () {
+    test('deja pasar los ids alfanumericos de Navidrome', () {
       expect(nombreSeguro('al-3f2b_9'), 'al-3f2b_9');
     });
 
-    test('neutraliza lo que escribiría fuera de la carpeta', () {
-      // Un id con barras podría apuntar a cualquier lado del sistema.
+    test('neutraliza lo que escribiria fuera de la carpeta', () {
+      // Un id con barras podria apuntar a cualquier lado del sistema.
       expect(nombreSeguro('../../etc/passwd'), '______etc_passwd');
     });
 

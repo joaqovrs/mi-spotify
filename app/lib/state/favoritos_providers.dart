@@ -4,11 +4,11 @@ import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import 'sesion_providers.dart';
 
-/// Estado de los favoritos, con una única fuente de verdad.
+/// Estado de los favoritos, con una unica fuente de verdad.
 ///
-/// Los objetos que llegan de otros endpoints también traen si están marcados,
-/// pero mezclar ambas fuentes lleva a incoherencias — desmarcás algo y el dato
-/// viejo del listado sigue diciendo que es favorito. Así que manda esto y solo
+/// Los objetos que llegan de otros endpoints tambien traen si estan marcados,
+/// pero mezclar ambas fuentes lleva a incoherencias — desmarcas algo y el dato
+/// viejo del listado sigue diciendo que es favorito. Asi que manda esto y solo
 /// esto.
 final favoritosProvider =
     StateNotifierProvider<FavoritosNotifier, AsyncValue<Favoritos>>((ref) {
@@ -61,10 +61,10 @@ class FavoritosNotifier extends StateNotifier<AsyncValue<Favoritos>> {
     agregar: (f) => f.copiarCon(artistas: [artista, ...f.artistas]),
   );
 
-  /// Actualiza la pantalla primero y confirma contra el servidor después.
+  /// Actualiza la pantalla primero y confirma contra el servidor despues.
   ///
-  /// El corazón tiene que responder al toque en el acto; esperar el viaje de
-  /// ida y vuelta al servidor se siente roto. Si la petición falla, se
+  /// El corazon tiene que responder al toque en el acto; esperar el viaje de
+  /// ida y vuelta al servidor se siente roto. Si la peticion falla, se
   /// devuelve el estado anterior y se propaga el error.
   Future<void> _alternar({
     required String id,

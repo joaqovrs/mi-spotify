@@ -9,10 +9,10 @@ import 'avisos.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
-/// Lo que está guardado en el teléfono.
+/// Lo que esta guardado en el telefono.
 ///
-/// Es la única pantalla que **no toca la red**: los títulos salen del índice
-/// local y las carátulas de los archivos bajados. Tiene que servir igual con el
+/// Es la unica pantalla que **no toca la red**: los titulos salen del indice
+/// local y las caratulas de los archivos bajados. Tiene que servir igual con el
 /// servidor apagado, que es justamente para lo que existe.
 class DescargasTab extends ConsumerWidget {
   const DescargasTab({super.key});
@@ -34,8 +34,8 @@ class DescargasTab extends ConsumerWidget {
             padding: EdgeInsets.only(top: 40),
             child: EstadoVacio(
               mensaje:
-                  'Nada descargado todavía. Usá "Descargar" en el menú «···» '
-                  'de una canción, o en el de un álbum o playlist entera.',
+                  'Nada descargado todavia. Usa "Descargar" en el menu «···» '
+                  'de una cancion, o en el de un album o playlist entera.',
               icono: Icons.download_rounded,
             ),
           )
@@ -64,7 +64,7 @@ class _Encabezado extends ConsumerWidget {
     final textos = Theme.of(context).textTheme;
     final bytes = ref.watch(espacioDescargadoProvider);
 
-    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 12, 4),
@@ -91,7 +91,7 @@ class _Encabezado extends ConsumerWidget {
       context,
       titulo: 'Borrar descargas',
       mensaje:
-          'Se liberan del teléfono. La música sigue en el servidor y podés '
+          'Se liberan del telefono. La musica sigue en el servidor y puedes '
           'volver a bajarla cuando quieras.',
       aceptar: 'Borrar todo',
     );
@@ -143,7 +143,7 @@ class _Progreso extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              // Sin avance informado va indeterminada, que es más honesto que
+              // Sin avance informado va indeterminada, que es mas honesto que
               // una barra clavada en cero.
               value: estado.avance > 0 ? estado.avance : null,
               minHeight: 5,

@@ -14,12 +14,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Tiene que crearse antes de la app: engancha el servicio de Android que
-  // sostiene la reproducción en segundo plano.
+  // sostiene la reproduccion en segundo plano.
   final handler = await AudioService.init(
     builder: ReproductorHandler.new,
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.joaqovrs.mi_spotify.audio',
-      androidNotificationChannelName: 'Reproducción',
+      androidNotificationChannelName: 'Reproduccion',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
     ),
@@ -39,7 +39,7 @@ class MiSpotifyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'mi spotify',
+      title: 'Mi Music',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.claro,
       darkTheme: AppTheme.oscuro,
@@ -49,8 +49,8 @@ class MiSpotifyApp extends ConsumerWidget {
   }
 }
 
-/// Decide qué mostrar según el estado de la sesión. Es el único lugar que
-/// navega entre login y app, así ninguna pantalla tiene que ocuparse de eso.
+/// Decide que mostrar segun el estado de la sesion. Es el unico lugar que
+/// navega entre login y app, asi ninguna pantalla tiene que ocuparse de eso.
 class _Puerta extends ConsumerWidget {
   const _Puerta();
 

@@ -6,10 +6,10 @@ import 'buscar_screen.dart';
 import 'inicio_screen.dart';
 import 'widgets/mini_reproductor.dart';
 
-/// Contenedor principal con la barra de navegación inferior.
+/// Contenedor principal con la barra de navegacion inferior.
 ///
-/// Usa [IndexedStack] en vez de reconstruir cada pestaña: así el scroll y el
-/// estado de cada sección se conservan al ir y volver.
+/// Usa [IndexedStack] en vez de reconstruir cada pestaña: asi el scroll y el
+/// estado de cada seccion se conservan al ir y volver.
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
 

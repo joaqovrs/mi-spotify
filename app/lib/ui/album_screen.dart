@@ -14,7 +14,7 @@ import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
 import 'widgets/tarjetas.dart';
 
-/// Detalle de un álbum: portada, datos y lista de temas.
+/// Detalle de un album: portada, datos y lista de temas.
 class AlbumScreen extends ConsumerWidget {
   const AlbumScreen({required this.album, super.key});
 
@@ -25,8 +25,8 @@ class AlbumScreen extends ConsumerWidget {
     final asincrono = ref.watch(cancionesDeAlbumProvider(album.id));
     final textos = Theme.of(context).textTheme;
 
-    // Se mira acá y se pasa a cada fila, en vez de que cada fila lo observe por
-    // su cuenta: así al cambiar de tema se reconstruye la lista una sola vez.
+    // Se mira aqui y se pasa a cada fila, en vez de que cada fila lo observe por
+    // su cuenta: asi al cambiar de tema se reconstruye la lista una sola vez.
     final sonandoId = ref.watch(cancionActualProvider).value?.id;
 
     final canciones = asincrono.value ?? const <Cancion>[];
@@ -42,7 +42,7 @@ class AlbumScreen extends ConsumerWidget {
           ),
           if (canciones.isNotEmpty)
             PopupMenuButton<void>(
-              tooltip: 'Más opciones',
+              tooltip: 'Mas opciones',
               itemBuilder: (_) => [
                 PopupMenuItem<void>(
                   onTap: () => encolar(context, ref, canciones),
@@ -50,7 +50,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.queue_music_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Agregar álbum a la cola'),
+                      Text('Agregar album a la cola'),
                     ],
                   ),
                 ),
@@ -60,7 +60,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.playlist_add_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Guardar álbum en playlist'),
+                      Text('Guardar album en playlist'),
                     ],
                   ),
                 ),
@@ -70,7 +70,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.download_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Descargar álbum'),
+                      Text('Descargar album'),
                     ],
                   ),
                 ),
@@ -123,7 +123,7 @@ class AlbumScreen extends ConsumerWidget {
               ),
             ),
             if (canciones.isEmpty)
-              const EstadoVacio(mensaje: 'Este álbum no tiene canciones.')
+              const EstadoVacio(mensaje: 'Este album no tiene canciones.')
             else
               for (var i = 0; i < canciones.length; i++)
                 FilaCancion(
@@ -145,7 +145,7 @@ class AlbumScreen extends ConsumerWidget {
   }
 
   String _subtitulo(int cantidad) {
-    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
     return album.anio == null ? temas : '${album.anio} · $temas';
   }
 }

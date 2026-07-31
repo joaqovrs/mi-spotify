@@ -13,10 +13,10 @@ import 'widgets/tarjetas.dart';
 
 /// Pantalla de inicio: cuatro pestañas sobre la biblioteca del servidor.
 ///
-/// Todo lo que se ve acá sale de datos reales de Navidrome. Donde Spotify
-/// pondría "éxitos globales" o listas curadas, van los equivalentes que un
-/// servidor personal sí puede sostener: lo último que subiste, lo que más
-/// escuchaste, lo que sonó recién y una selección al azar.
+/// Todo lo que se ve aqui sale de datos reales de Navidrome. Donde Spotify
+/// pondria "exitos globales" o listas curadas, van los equivalentes que un
+/// servidor personal si puede sostener: lo ultimo que subiste, lo que mas
+/// escuchaste, lo que sono recien y una seleccion al azar.
 class InicioScreen extends ConsumerWidget {
   const InicioScreen({super.key});
 
@@ -52,7 +52,7 @@ class InicioScreen extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'Resumen'),
                   Tab(text: 'Canciones'),
-                  Tab(text: 'Álbumes'),
+                  Tab(text: 'Albumes'),
                   Tab(text: 'Artistas'),
                 ],
               ),
@@ -89,22 +89,22 @@ class _PestanaResumen extends ConsumerWidget {
           _Carrusel(
             titulo: 'Agregados recientemente',
             provider: albumesRecientesProvider,
-            vacio: 'Todavía no subiste música al servidor.',
+            vacio: 'Todavia no subiste musica al servidor.',
           ),
           _Carrusel(
-            titulo: 'Tus más escuchados',
+            titulo: 'Tus mas escuchados',
             provider: albumesFrecuentesProvider,
-            vacio: 'Cuando escuches música, acá aparecen tus favoritos.',
+            vacio: 'Cuando escuches musica, aqui aparecen tus favoritos.',
           ),
           _Carrusel(
-            titulo: 'Volvé a escuchar',
+            titulo: 'Vuelve a escuchar',
             provider: albumesRecienEscuchadosProvider,
-            vacio: 'Acá va a quedar lo último que sonó.',
+            vacio: 'Aca va a quedar lo ultimo que sono.',
           ),
           _Carrusel(
             titulo: 'Al azar de tu biblioteca',
             provider: albumesAlAzarProvider,
-            vacio: 'Sin álbumes para sortear todavía.',
+            vacio: 'Sin albumes para sortear todavia.',
           ),
         ],
       ),
@@ -112,7 +112,7 @@ class _PestanaResumen extends ConsumerWidget {
   }
 }
 
-/// Fila horizontal de álbumes con su encabezado.
+/// Fila horizontal de albumes con su encabezado.
 class _Carrusel extends ConsumerWidget {
   const _Carrusel({
     required this.titulo,
@@ -202,7 +202,7 @@ class _PestanaCanciones extends ConsumerWidget {
             itemBuilder: (context, i) => FilaCancion(
               cancion: canciones[i],
               sonando: canciones[i].id == sonandoId,
-              // La cola pasa a ser la lista entera, arrancando en la que tocó.
+              // La cola pasa a ser la lista entera, arrancando en la que toco.
               onTap: () => reproducir(ref, canciones, i),
               onAgregarACola: () => encolar(context, ref, [canciones[i]]),
               onGuardarEnPlaylist: () =>
@@ -218,7 +218,7 @@ class _PestanaCanciones extends ConsumerWidget {
   }
 }
 
-// ------------------------------------------------------------------- Álbumes
+// ------------------------------------------------------------------- Albumes
 
 class _PestanaAlbumes extends ConsumerWidget {
   const _PestanaAlbumes();
@@ -243,7 +243,7 @@ class _PestanaAlbumes extends ConsumerWidget {
           if (albumes.isEmpty) {
             return ListView(
               children: const [
-                EstadoVacio(mensaje: 'Todavía no hay álbumes en el servidor.'),
+                EstadoVacio(mensaje: 'Todavia no hay albumes en el servidor.'),
               ],
             );
           }
@@ -295,7 +295,7 @@ class _PestanaArtistas extends ConsumerWidget {
             return ListView(
               children: const [
                 EstadoVacio(
-                  mensaje: 'Todavía no hay artistas en el servidor.',
+                  mensaje: 'Todavia no hay artistas en el servidor.',
                   icono: Icons.person_outline_rounded,
                 ),
               ],

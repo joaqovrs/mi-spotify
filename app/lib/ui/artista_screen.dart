@@ -11,7 +11,7 @@ import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
 import 'widgets/tarjetas.dart';
 
-/// Detalle de un artista: sus álbumes en el servidor.
+/// Detalle de un artista: sus albumes en el servidor.
 class ArtistaScreen extends ConsumerWidget {
   const ArtistaScreen({required this.artista, super.key});
 
@@ -58,8 +58,8 @@ class ArtistaScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       albumes.length == 1
-                          ? '1 álbum'
-                          : '${albumes.length} álbumes',
+                          ? '1 album'
+                          : '${albumes.length} albumes',
                       style: textos.bodySmall,
                     ),
                   ],
@@ -68,7 +68,7 @@ class ArtistaScreen extends ConsumerWidget {
             ),
             if (albumes.isEmpty)
               const SliverToBoxAdapter(
-                child: EstadoVacio(mensaje: 'Sin álbumes de este artista.'),
+                child: EstadoVacio(mensaje: 'Sin albumes de este artista.'),
               )
             else
               SliverPadding(

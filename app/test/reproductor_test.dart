@@ -26,8 +26,8 @@ void main() {
 
       final url = item.extras!['url'] as String;
 
-      // El handler corre aislado del cliente: si la URL no viniera firmada acá,
-      // no tendría manera de autenticarse contra Navidrome.
+      // El handler corre aislado del cliente: si la URL no viniera firmada aca,
+      // no tendria manera de autenticarse contra Navidrome.
       expect(url, contains('/rest/stream'));
       expect(url, contains('id=cancion-1'));
       expect(url, contains('t='));
@@ -35,7 +35,7 @@ void main() {
       expect(url, isNot(contains('secreta')));
     });
 
-    test('mapea los metadatos que muestra la notificación', () {
+    test('mapea los metadatos que muestra la notificacion', () {
       final item = aMediaItem(
         Cancion.desdeJson({
           'id': 'c-2',
@@ -54,14 +54,14 @@ void main() {
       expect(item.duration, const Duration(seconds: 200));
     });
 
-    test('sin portada no inventa una URL de carátula', () {
+    test('sin portada no inventa una URL de caratula', () {
       final item = aMediaItem(Cancion.desdeJson({'id': 'c-3'}), cliente);
 
       expect(item.artUri, isNull);
       expect(portadaDe(item), isNull);
     });
 
-    test('guarda el id de portada aparte del id de la canción', () {
+    test('guarda el id de portada aparte del id de la cancion', () {
       final item = aMediaItem(
         Cancion.desdeJson({'id': 'c-4', 'coverArt': 'portada-distinta'}),
         cliente,
@@ -86,7 +86,7 @@ void main() {
   });
 
   group('ProgresoReproduccion', () {
-    test('calcula la fracción reproducida', () {
+    test('calcula la fraccion reproducida', () {
       const progreso = ProgresoReproduccion(
         posicion: Duration(seconds: 30),
         duracion: Duration(seconds: 120),
@@ -96,7 +96,7 @@ void main() {
       expect(progreso.fraccion, 0.25);
     });
 
-    test('devuelve 0 si el servidor no informó duración', () {
+    test('devuelve 0 si el servidor no informo duracion', () {
       const progreso = ProgresoReproduccion(
         posicion: Duration(seconds: 30),
         duracion: Duration.zero,
@@ -106,8 +106,8 @@ void main() {
       expect(progreso.fraccion, 0);
     });
 
-    test('acota la fracción para que la barra nunca se desborde', () {
-      // Pasa de verdad: el archivo dura un poco más que lo que dice la etiqueta.
+    test('acota la fraccion para que la barra nunca se desborde', () {
+      // Pasa de verdad: el archivo dura un poco mas que lo que dice la etiqueta.
       const progreso = ProgresoReproduccion(
         posicion: Duration(seconds: 130),
         duracion: Duration(seconds: 120),

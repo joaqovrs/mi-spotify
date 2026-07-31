@@ -7,8 +7,8 @@ import '../../state/reproductor_providers.dart';
 /// Interruptor del modo aleatorio.
 ///
 /// Va al lado de "Reproducir" pero deliberadamente callado: es un ajuste que
-/// se deja puesto, no la acción principal de la pantalla. Encendido se pinta de
-/// naranja sobre un fondo tenue; apagado es un ícono gris más.
+/// se deja puesto, no la accion principal de la pantalla. Encendido se pinta de
+/// naranja sobre un fondo tenue; apagado es un icono gris mas.
 class BotonAleatorio extends ConsumerWidget {
   const BotonAleatorio({super.key});
 

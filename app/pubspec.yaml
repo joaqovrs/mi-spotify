@@ -1,5 +1,5 @@
 name: mi_spotify
-description: "Cliente Android para el servidor de musica propio (API Subsonic / Navidrome)."
+description: "Mi Music: cliente Android del servidor de musica propio (API Subsonic / Navidrome)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -55,6 +55,23 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# Icono del APK. Se regenera con:
+#   dart run flutter_launcher_icons
+# Los PNG salen del SVG original (assets/icono/icono.svg) renderizado a 1024px.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icono/icono.png"
+  # Icono adaptativo (Android 8+): el sistema recorta el primer plano con la
+  # forma que use el launcher. Por eso el foreground va sin fondo y con el
+  # dibujo al 66%, que es la zona segura: lo de afuera puede quedar cortado.
+  adaptive_icon_background: "#201A17"
+  adaptive_icon_foreground: "assets/icono/icono_foreground.png"
+  # El plugin mete 16% de margen por defecto. El dibujo ya trae aire propio,
+  # asi que con ese margen encima la nota queda diminuta dentro del icono.
+  adaptive_icon_foreground_inset: 4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

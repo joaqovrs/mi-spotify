@@ -6,7 +6,7 @@ void main() {
     test('lee los campos habituales de Navidrome', () {
       final album = Album.desdeJson({
         'id': 'al-1',
-        'name': 'Ídolos',
+        'name': 'Idolos',
         'artist': 'Los Redondos',
         'artistId': 'ar-9',
         'coverArt': 'al-1',
@@ -15,22 +15,22 @@ void main() {
       });
 
       expect(album.id, 'al-1');
-      expect(album.nombre, 'Ídolos');
+      expect(album.nombre, 'Idolos');
       expect(album.artista, 'Los Redondos');
       expect(album.anio, 1988);
       expect(album.cantidadCanciones, 10);
     });
 
-    test('sobrevive a un álbum sin metadatos', () {
+    test('sobrevive a un album sin metadatos', () {
       final album = Album.desdeJson({'id': 'al-2'});
 
-      expect(album.nombre, 'Sin título');
+      expect(album.nombre, 'Sin titulo');
       expect(album.artista, 'Artista desconocido');
       expect(album.coverArt, isNull);
     });
 
-    test('convierte el id numérico a texto', () {
-      // Algunos servidores Subsonic mandan el id como número.
+    test('convierte el id numerico a texto', () {
+      // Algunos servidores Subsonic mandan el id como numero.
       final album = Album.desdeJson({'id': 42, 'name': 'Disco'});
 
       expect(album.id, '42');
@@ -38,7 +38,7 @@ void main() {
   });
 
   group('Cancion', () {
-    test('formatea la duración en minutos y segundos', () {
+    test('formatea la duracion en minutos y segundos', () {
       expect(
         Cancion.desdeJson({'id': '1', 'duration': 187}).duracionFormateada,
         '3:07',
@@ -53,13 +53,13 @@ void main() {
       );
     });
 
-    test('muestra un guion cuando el servidor no informó la duración', () {
+    test('muestra un guion cuando el servidor no informo la duracion', () {
       expect(Cancion.desdeJson({'id': '4'}).duracionFormateada, '—');
     });
   });
 
   group('Artista.desdeJson', () {
-    test('lee nombre y cantidad de álbumes', () {
+    test('lee nombre y cantidad de albumes', () {
       final artista = Artista.desdeJson({
         'id': 'ar-1',
         'name': 'Spinetta',

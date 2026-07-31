@@ -8,7 +8,7 @@ import '../models/biblioteca.dart';
 import '../models/descarga.dart';
 import 'sesion_providers.dart';
 
-/// Qué hay guardado y qué se está bajando.
+/// Que hay guardado y que se esta bajando.
 class EstadoDescargas {
   const EstadoDescargas({
     this.guardadas = const [],
@@ -18,27 +18,27 @@ class EstadoDescargas {
     this.error,
   });
 
-  /// Lo que ya está en el teléfono.
+  /// Lo que ya esta en el telefono.
   final List<Descarga> guardadas;
 
-  /// Lo que espera turno. Se baja de a una: saturar el túnel de Tailscale con
+  /// Lo que espera turno. Se baja de a una: saturar la subida de casa con
   /// veinte descargas en paralelo hace que ninguna termine y encima corta la
-  /// reproducción que esté sonando.
+  /// reproduccion que este sonando.
   final List<Cancion> pendientes;
 
-  /// La que se está bajando ahora, si hay alguna.
+  /// La que se esta bajando ahora, si hay alguna.
   final Cancion? bajando;
 
   /// Avance de [bajando], entre 0 y 1.
   final double avance;
 
-  /// Motivo de la última descarga que falló. Se limpia al empezar una tanda
+  /// Motivo de la ultima descarga que fallo. Se limpia al empezar una tanda
   /// nueva.
   final String? error;
 
   bool get hayTrabajo => bajando != null || pendientes.isNotEmpty;
 
-  /// Cuántas faltan, contando la que está en curso.
+  /// Cuantas faltan, contando la que esta en curso.
   int get restantes => pendientes.length + (bajando == null ? 0 : 1);
 
   EstadoDescargas copiarCon({
@@ -72,19 +72,19 @@ final descargasProvider =
 ///
 /// Todos los derivados miran esto y no el estado entero: el avance de una
 /// descarga cambia varias veces por segundo, y sin este recorte cada tick
-/// reconstruiría todas las portadas y todas las filas en pantalla.
+/// reconstruiria todas las portadas y todas las filas en pantalla.
 final _guardadasProvider = Provider<List<Descarga>>((ref) {
   return ref.watch(descargasProvider.select((estado) => estado.guardadas));
 });
 
-/// Descargas por id de canción, que es como las consulta el reproductor antes
+/// Descargas por id de cancion, que es como las consulta el reproductor antes
 /// de decidir si reproduce del disco o del servidor.
 final archivosDescargadosProvider = Provider<Map<String, Descarga>>((ref) {
   return {for (final d in ref.watch(_guardadasProvider)) d.cancion.id: d};
 });
 
-/// Carátulas guardadas, por id de portada. Las comparten todos los temas del
-/// mismo álbum, así que una sola imagen sirve para muchas canciones.
+/// Caratulas guardadas, por id de portada. Las comparten todos los temas del
+/// mismo album, asi que una sola imagen sirve para muchas canciones.
 final portadasDescargadasProvider = Provider<Map<String, String>>((ref) {
   return {
     for (final d in ref.watch(_guardadasProvider))
@@ -93,7 +93,7 @@ final portadasDescargadasProvider = Provider<Map<String, String>>((ref) {
   };
 });
 
-/// Ids esperando turno o bajando, para que la fila muestre que está en camino.
+/// Ids esperando turno o bajando, para que la fila muestre que esta en camino.
 final idsEnDescargaProvider = Provider<Set<String>>((ref) {
   final bajando = ref.watch(
     descargasProvider.select((estado) => estado.bajando?.id),
@@ -130,9 +130,9 @@ class DescargasNotifier extends StateNotifier<EstadoDescargas> {
     if (mounted) state = state.copiarCon(guardadas: guardadas);
   }
 
-  /// Suma canciones a la cola, salteando las que ya están o ya esperan.
+  /// Suma canciones a la cola, salteando las que ya estan o ya esperan.
   ///
-  /// No es asincrónico a propósito: quien toca "descargar álbum" tiene que ver
+  /// No es asincronico a proposito: quien toca "descargar album" tiene que ver
   /// la respuesta en el acto, no cuando termine de bajarse el disco.
   void descargar(List<Cancion> canciones) {
     final yaEstan = {
@@ -217,14 +217,14 @@ class DescargasNotifier extends StateNotifier<EstadoDescargas> {
     );
   }
 
-  /// La carátula es un extra: si falla, la canción igual quedó descargada y se
-  /// muestra con el marcador genérico.
+  /// La caratula es un extra: si falla, la cancion igual quedo descargada y se
+  /// muestra con el marcador generico.
   Future<String?> _bajarPortada(Cancion cancion) async {
     final coverArt = cancion.coverArt;
     if (coverArt == null) return null;
 
     final ruta = await _storage.rutaDePortada(coverArt);
-    // Ya la bajó otro tema del mismo álbum.
+    // Ya la bajo otro tema del mismo album.
     if (await File(ruta).exists()) return ruta;
 
     try {
@@ -244,8 +244,8 @@ class DescargasNotifier extends StateNotifier<EstadoDescargas> {
 
     await _storage.borrarArchivo(descarga.archivo);
 
-    // La carátula la comparten los temas del mismo álbum: se borra solo cuando
-    // no queda ninguno que la esté usando.
+    // La caratula la comparten los temas del mismo album: se borra solo cuando
+    // no queda ninguno que la este usando.
     final portada = descarga.portada;
     if (portada != null && !quedan.any((d) => d.portada == portada)) {
       await _storage.borrarArchivo(portada);

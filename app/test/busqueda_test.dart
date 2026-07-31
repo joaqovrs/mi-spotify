@@ -3,7 +3,7 @@ import 'package:mi_spotify/models/biblioteca.dart';
 
 void main() {
   group('ResultadoBusqueda', () {
-    test('el vacío no tiene nada de ningún tipo', () {
+    test('el vacio no tiene nada de ningun tipo', () {
       const resultado = ResultadoBusqueda.vacio();
 
       expect(resultado.estaVacio, isTrue);
@@ -12,7 +12,7 @@ void main() {
       expect(resultado.artistas, isEmpty);
     });
 
-    test('alcanza con un resultado de cualquier tipo para no estar vacío', () {
+    test('alcanza con un resultado de cualquier tipo para no estar vacio', () {
       final soloArtistas = ResultadoBusqueda(
         canciones: const [],
         albumes: const [],

@@ -8,7 +8,7 @@ import '../../state/favoritos_providers.dart';
 import '../acciones_descarga.dart';
 import 'portada.dart';
 
-/// Tarjeta vertical de álbum para los carruseles y la grilla.
+/// Tarjeta vertical de album para los carruseles y la grilla.
 class TarjetaAlbum extends StatelessWidget {
   const TarjetaAlbum({
     required this.album,
@@ -56,11 +56,11 @@ class TarjetaAlbum extends StatelessWidget {
   }
 }
 
-/// Fila de canción: portada chica, título, artista y duración.
+/// Fila de cancion: portada chica, titulo, artista y duracion.
 ///
-/// Con [sonando] en true se pinta de naranja y cambia la duración por un
-/// ícono de ecualizador, para que se vea de un golpe cuál de la lista está
-/// reproduciéndose.
+/// Con [sonando] en true se pinta de naranja y cambia la duracion por un
+/// icono de ecualizador, para que se vea de un golpe cual de la lista esta
+/// reproduciendose.
 class FilaCancion extends ConsumerWidget {
   const FilaCancion({
     required this.cancion,
@@ -76,13 +76,13 @@ class FilaCancion extends ConsumerWidget {
   final Cancion cancion;
   final VoidCallback? onTap;
 
-  /// Si se pasa, aparece el menú "..." con la opción de encolar.
+  /// Si se pasa, aparece el menu "..." con la opcion de encolar.
   final VoidCallback? onAgregarACola;
 
-  /// Si se pasa, el menú "..." incluye marcar o desmarcar favorito.
+  /// Si se pasa, el menu "..." incluye marcar o desmarcar favorito.
   final VoidCallback? onAlternarFavorito;
 
-  /// Si se pasa, el menú "..." abre la hoja para guardar en una playlist.
+  /// Si se pasa, el menu "..." abre la hoja para guardar en una playlist.
   final VoidCallback? onGuardarEnPlaylist;
 
   /// Solo lo pasa la pantalla de una playlist, que es donde tiene sentido.
@@ -101,13 +101,13 @@ class FilaCancion extends ConsumerWidget {
     final tema = Theme.of(context);
     final textos = tema.textTheme;
 
-    // A diferencia de las demás acciones, descargar no depende de la pantalla
-    // en la que esté la fila: es siempre "guardá esta canción". Por eso se
-    // resuelve acá adentro en vez de pedirle un callback a cada pantalla.
+    // A diferencia de las demas acciones, descargar no depende de la pantalla
+    // en la que este la fila: es siempre "guarda esta cancion". Por eso se
+    // resuelve aqui adentro en vez de pedirle un callback a cada pantalla.
     final descarga = ref.watch(archivosDescargadosProvider)[cancion.id];
     final enCamino = ref.watch(idsEnDescargaProvider).contains(cancion.id);
 
-    // El naranja de marca no tiene contraste suficiente sobre blanco, así que
+    // El naranja de marca no tiene contraste suficiente sobre blanco, asi que
     // en tema claro se usa la variante oscurecida.
     final acento = tema.brightness == Brightness.dark
         ? AppColors.naranja
@@ -172,9 +172,9 @@ class FilaCancion extends ConsumerWidget {
             if (_tieneMenu)
               PopupMenuButton<void>(
                 icon: const Icon(Icons.more_horiz_rounded),
-                tooltip: 'Más opciones',
-                // El menú se cierra antes de correr el `onTap`, así que las
-                // acciones usan el contexto de la fila y no el del menú, que
+                tooltip: 'Mas opciones',
+                // El menu se cierra antes de correr el `onTap`, asi que las
+                // acciones usan el contexto de la fila y no el del menu, que
                 // para entonces ya no existe.
                 itemBuilder: (_) {
                   final esFavorito = ref
@@ -243,7 +243,7 @@ class FilaCancion extends ConsumerWidget {
                           children: [
                             Icon(Icons.delete_outline_rounded, size: 20),
                             SizedBox(width: 12),
-                            Text('Borrar del teléfono'),
+                            Text('Borrar del telefono'),
                           ],
                         ),
                       )
@@ -269,12 +269,12 @@ class FilaCancion extends ConsumerWidget {
     if (onAgregarACola == null) return fila;
 
     return Dismissible(
-      // Por instancia y no por id: en una playlist la misma canción puede
+      // Por instancia y no por id: en una playlist la misma cancion puede
       // estar repetida y dos Dismissible hermanos no pueden compartir clave.
       key: ObjectKey(cancion),
       direction: DismissDirection.startToEnd,
-      // Nunca se descarta de verdad: el gesto es un atajo para encolar, así
-      // que se ejecuta la acción y la fila vuelve sola a su lugar.
+      // Nunca se descarta de verdad: el gesto es un atajo para encolar, asi
+      // que se ejecuta la accion y la fila vuelve sola a su lugar.
       confirmDismiss: (_) async {
         onAgregarACola!();
         return false;
@@ -302,7 +302,7 @@ class FilaCancion extends ConsumerWidget {
 }
 
 /// Fila de playlist. La portada la arma el servidor con los temas que tiene
-/// adentro, así que una playlist vacía cae en el marcador genérico.
+/// adentro, asi que una playlist vacia cae en el marcador generico.
 class FilaPlaylist extends StatelessWidget {
   const FilaPlaylist({required this.playlist, this.onTap, super.key});
 
@@ -362,7 +362,7 @@ class FilaArtista extends StatelessWidget {
                   if (albumes != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      albumes == 1 ? '1 álbum' : '$albumes álbumes',
+                      albumes == 1 ? '1 album' : '$albumes albumes',
                       style: textos.bodySmall,
                     ),
                   ],

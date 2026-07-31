@@ -10,7 +10,7 @@ import 'avisos.dart';
 ///
 /// No espera a que terminen: la cola avanza sola de a una y el progreso se ve
 /// en la pestaña Descargas. Bloquear la pantalla hasta bajar un disco entero
-/// por el túnel de Tailscale no sería usable.
+/// desde fuera de casa no seria usable.
 void descargar(
   BuildContext context,
   WidgetRef ref,
@@ -28,13 +28,13 @@ void descargar(
   notifier.descargar(canciones);
 
   avisar(ScaffoldMessenger.of(context), switch (nuevas) {
-    0 => 'Ya estaba en el teléfono',
+    0 => 'Ya estaba en el telefono',
     1 => 'Descargando…',
     final n => 'Descargando $n canciones…',
   });
 }
 
-/// Borra del teléfono lo descargado de una canción.
+/// Borra del telefono lo descargado de una cancion.
 Future<void> quitarDescarga(
   BuildContext context,
   WidgetRef ref,
@@ -43,5 +43,5 @@ Future<void> quitarDescarga(
   final mensajero = ScaffoldMessenger.of(context);
 
   await ref.read(descargasProvider.notifier).borrar(descarga);
-  avisar(mensajero, 'Borrada del teléfono');
+  avisar(mensajero, 'Borrada del telefono');
 }
