@@ -92,9 +92,11 @@ en la propia Debian. Ver Fase 5.
 | ~~Direccion remota en la app~~ | ✅ Resuelto el 31-07-2026: las direcciones dejaron de ser campos del login y viven en `core/config.dart`. Quien tenia guardada la del tailnet queda arreglado al actualizar el APK. |
 | **Cable de red** | La laptop esta por WiFi (`wlp1s0`); ethernet seria mas estable para 24/7. |
 | **Token de DuckDNS expuesto** | El token quedo a la vista en una captura. El usuario decidio **no regenerarlo** (30-07-2026). Si algun dia se recrea, hay que actualizar `~/duckdns/duck.sh`. |
-| **Port forward del registro** | El servicio ya corre y se probo OK en la red local. Falta la regla `WAN:34534 → 192.168.1.194:8080` (TCP) en el router para poder registrarse desde afuera. |
-| **APK con todo lo nuevo** | Compilar e instalar: nombre Mi Music, icono, login simple y registro. Sin esto el telefono sigue con la version vieja. |
-| **Icono del APK** | Esperando el arte definitivo (imagen nueva o archivo de Figma). Mientras tanto sigue el icono por defecto de Flutter. |
+| **Instalar el APK firmado** | Ya esta en el telefono en `/sdcard/Download/mi-music.apk` (tamaño verificado). ⚠️ **Hay que desinstalar la app primero**: cambio la clave de firma y Android rechaza la actualizacion. Se pierden sesion y descargas. |
+| **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
+| **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
+| **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
+| **Paso 8 del CI/CD** | Ya desbloqueado: falta el workflow que publique el APK firmado en GitHub Releases al taguear, con el keystore como secret del repo. |
 
 ### Datos del servidor
 | Dato | Valor |
@@ -145,7 +147,7 @@ rama nueva → commit → push → Pull Request → CI verde ✅ → merge → b
 | 5 | `main` protegida: el CI con poder de veto | ✅ |
 | 6 | **CD**: la Debian se actualiza sola al mergear (runner self-hosted) | 🔓 desbloqueado (la laptop ya esta) |
 | 7 | CI de la app Flutter (`flutter analyze` + `flutter test`) | 🔓 desbloqueado (la app ya existe) |
-| 8 | **CD**: APK firmado publicado en GitHub Releases al taguear version | ⏸ necesita la app |
+| 8 | **CD**: APK firmado publicado en GitHub Releases al taguear version | 🔓 desbloqueado (la firma propia ya existe; falta el workflow y pasarle el keystore como secret) |
 
 Los pasos 1–5 se completaron sin hardware; es el tope de lo posible antes de tener el servidor.
 
@@ -243,13 +245,49 @@ cd C:\dev\mi-spotify\app
 & C:\dev\flutter\bin\flutter.bat test
 & C:\dev\flutter\bin\flutter.bat build apk --release
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
-& $adb push build\app\outputs\flutter-apk\app-release.apk /sdcard/Download/mi-spotify.apk
+& $adb push build\app\outputs\flutter-apk\app-release.apk /sdcard/Download/mi-music.apk
 ```
 
 ⚠️ **`adb push` miente:** imprime `1 file pushed` incluso cuando la transferencia se corta
 (paso tres veces, con `failed to read copy response: EOF`). **Siempre comparar tamaños**
-con `& $adb shell "ls -l /sdcard/Download/mi-spotify.apk"` contra el archivo local antes de
+con `& $adb shell "stat -c %s /sdcard/Download/mi-music.apk"` contra el archivo local antes de
 avisar que esta listo. Si el telefono desaparece, reintentar: se reconecta solo.
+
+#### Firma del APK (31-07-2026)
+
+Hasta esta fecha el release salia firmado con la **clave de depuracion**, que es la misma en todas
+las maquinas de desarrollo del mundo y no identifica a nadie. Ahora hay una clave propia:
+
+| Dato | Valor |
+|---|---|
+| Keystore | `C:\Users\joaqu\.android-keys\mi-music-release.jks` — **fuera del repo** |
+| Alias | `mi-music` |
+| Certificado | `CN=Joaquin Varas, O=Mi Music, C=CL`, RSA 4096, 10.000 dias |
+| Configuracion | `app/android/key.properties` — **no se versiona** |
+
+`build.gradle.kts` lee `key.properties` **si existe** y, si falta, se cae a la clave de depuracion
+en vez de romper la build. Eso permite compilar en otra maquina o en el CI, pero tiene un riesgo:
+**el fallo es silencioso**. El APK compila igual y sale firmado con otra identidad. Se verifica con:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+& "$env:LOCALAPPDATA\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs -v <apk>
+```
+
+Tiene que decir `Signer #1 certificate DN: CN=Joaquin Varas, O=Mi Music, C=CL`. Si dice
+`CN=Android Debug, O=Android, C=US`, falta el `key.properties`.
+
+⚠️ `keytool -printcert -jarfile` **no sirve**: solo lee firmas v1 (JAR) y este APK va con esquema
+v2. Contesta "No es un archivo jar firmado" aunque este perfectamente firmado.
+
+⚠️ **Cambiar de clave equivale a cambiar de app.** Android compara la firma al actualizar: al pasar
+de la clave de depuracion a esta hubo que **desinstalar y reinstalar**, perdiendo sesion y
+descargas. Por eso se hizo ahora y no mas adelante. Y por eso **perder el keystore no tiene vuelta
+atras**: sin el no se puede volver a firmar con la misma identidad, y nadie puede regenerarlo.
+Hay que respaldarlo junto con su contrasena.
+
+**Lo que la firma NO arregla:** el aviso de Play Protect al instalar. Ese aparece porque la app no
+viene de Play Store, no porque este mal firmada, y solo desaparece publicandola ahi.
 
 #### Decisiones de diseño
 - Referencia visual: mucho aire, fondo blanco, tipografia pesada en titulos, tarjetas muy redondeadas.
