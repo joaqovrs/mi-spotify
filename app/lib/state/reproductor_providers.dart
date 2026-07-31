@@ -6,7 +6,9 @@ import 'package:rxdart/rxdart.dart';
 
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
+import '../models/descarga.dart';
 import '../services/reproductor_handler.dart';
+import 'descargas_providers.dart';
 import 'sesion_providers.dart';
 
 /// El handler se crea una sola vez, en `main()`, y se inyecta acá al arrancar.
@@ -72,8 +74,17 @@ final progresoProvider = StreamProvider<ProgresoReproduccion>((ref) {
 ///
 /// La URL de streaming va en `extras` porque el handler corre aislado y no
 /// tiene acceso a las credenciales: necesita la URL ya firmada.
-MediaItem aMediaItem(Cancion cancion, SubsonicClient cliente) {
+///
+/// Si la canción está descargada se apunta al archivo del teléfono en vez de
+/// al servidor — es lo único que hace falta para que suene sin conexión, porque
+/// de acá para abajo al reproductor le da igual de dónde salga el audio.
+MediaItem aMediaItem(
+  Cancion cancion,
+  SubsonicClient cliente, {
+  Descarga? descarga,
+}) {
   final portada = cancion.coverArt;
+  final portadaLocal = descarga?.portada;
 
   return MediaItem(
     id: cancion.id,
@@ -83,9 +94,15 @@ MediaItem aMediaItem(Cancion cancion, SubsonicClient cliente) {
     duration: cancion.duracion == null
         ? null
         : Duration(seconds: cancion.duracion!),
-    artUri: portada == null ? null : cliente.urlPortada(portada, tamano: 512),
+    artUri: switch ((portadaLocal, portada)) {
+      (final String local, _) => Uri.file(local),
+      (_, final String remota) => cliente.urlPortada(remota, tamano: 512),
+      _ => null,
+    },
     extras: {
-      'url': cliente.urlStream(cancion.id).toString(),
+      'url': descarga == null
+          ? cliente.urlStream(cancion.id).toString()
+          : Uri.file(descarga.archivo).toString(),
       // Se guarda el id de portada aparte para que la UI pueda rearmar la URL
       // al tamaño que necesite, en vez de adivinarlo desde el id de la canción.
       'coverArt': portada,
@@ -126,12 +143,23 @@ Future<void> reproducir(
   int indice, {
   String? origen,
 }) async {
-  final cliente = ref.read(clienteProvider);
-  final items = [for (final c in canciones) aMediaItem(c, cliente)];
+  final items = _aMediaItems(ref, canciones);
 
   await ref
       .read(reproductorProvider)
       .reproducirLista(items, indice, origen: origen);
+}
+
+/// Arma los [MediaItem] resolviendo, para cada canción, si sale del disco o
+/// del servidor.
+List<MediaItem> _aMediaItems(WidgetRef ref, List<Cancion> canciones) {
+  final cliente = ref.read(clienteProvider);
+  final descargadas = ref.read(archivosDescargadosProvider);
+
+  return [
+    for (final cancion in canciones)
+      aMediaItem(cancion, cliente, descarga: descargadas[cancion.id]),
+  ];
 }
 
 /// Arranca una lista entera desde el botón "Reproducir".
@@ -174,10 +202,7 @@ Future<void> alternarAleatorio(WidgetRef ref) {
 
 /// Suma canciones al final de la cola.
 Future<void> agregarACola(WidgetRef ref, List<Cancion> canciones) async {
-  final cliente = ref.read(clienteProvider);
-  final items = [for (final c in canciones) aMediaItem(c, cliente)];
-
-  await ref.read(reproductorProvider).agregarACola(items);
+  await ref.read(reproductorProvider).agregarACola(_aMediaItems(ref, canciones));
 }
 
 /// Formatea una duración como `3:07` o `1:02:33`.

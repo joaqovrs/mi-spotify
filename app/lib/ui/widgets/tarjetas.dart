@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../models/biblioteca.dart';
+import '../../state/descargas_providers.dart';
 import '../../state/favoritos_providers.dart';
+import '../acciones_descarga.dart';
 import 'portada.dart';
 
 /// Tarjeta vertical de álbum para los carruseles y la grilla.
@@ -99,6 +101,12 @@ class FilaCancion extends ConsumerWidget {
     final tema = Theme.of(context);
     final textos = tema.textTheme;
 
+    // A diferencia de las demás acciones, descargar no depende de la pantalla
+    // en la que esté la fila: es siempre "guardá esta canción". Por eso se
+    // resuelve acá adentro en vez de pedirle un callback a cada pantalla.
+    final descarga = ref.watch(archivosDescargadosProvider)[cancion.id];
+    final enCamino = ref.watch(idsEnDescargaProvider).contains(cancion.id);
+
     // El naranja de marca no tiene contraste suficiente sobre blanco, así que
     // en tema claro se usa la variante oscurecida.
     final acento = tema.brightness == Brightness.dark
@@ -139,6 +147,24 @@ class FilaCancion extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
+            if (enCamino)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: textos.bodySmall?.color,
+                ),
+              )
+            else if (descarga != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.download_done_rounded,
+                  size: 16,
+                  color: acento,
+                ),
+              ),
             if (sonando)
               Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
             else
@@ -207,6 +233,28 @@ class FilaCancion extends ConsumerWidget {
                             Icon(Icons.playlist_remove_rounded, size: 20),
                             SizedBox(width: 12),
                             Text('Quitar de la playlist'),
+                          ],
+                        ),
+                      ),
+                    if (descarga != null)
+                      PopupMenuItem<void>(
+                        onTap: () => quitarDescarga(context, ref, descarga),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.delete_outline_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('Borrar del teléfono'),
+                          ],
+                        ),
+                      )
+                    else if (!enCamino)
+                      PopupMenuItem<void>(
+                        onTap: () => descargar(context, ref, [cancion]),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.download_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('Descargar'),
                           ],
                         ),
                       ),

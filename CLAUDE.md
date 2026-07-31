@@ -51,12 +51,11 @@ Laptop vieja (Linux Debian)                                   Teléfono Android
   tailnet **`100.91.22.33`**, expiración de clave desactivada, app instalada en el teléfono.
   **Prueba de fuego superada:** reproducción OK desde el teléfono con el WiFi apagado (solo datos
   móviles). El backend está terminado y accesible desde cualquier red.
-- 🔄 **Fase 4 en curso (30-07-2026): 6 de 7 etapas de la app terminadas y probadas en el teléfono.**
-  Andando: login con doble dirección local/tailnet, sesión persistente, tema claro y oscuro,
-  pantalla de inicio con carruseles reales, reproductor con segundo plano y controles en la
-  notificación, buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos y
-  playlists con crear, editar y borrar.
-  **Falta solo la etapa 7 (descargas offline).** Detalle en la sección Fase 4.
+- ✅ **Fase 4 completa (30-07-2026): las 7 etapas de la app terminadas.**
+  Login con doble dirección local/tailnet, sesión persistente, tema claro y oscuro, pantalla de
+  inicio con carruseles reales, reproductor con segundo plano y controles en la notificación,
+  buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos, playlists con crear,
+  editar y borrar, y **descargas offline**. Detalle en la sección Fase 4.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
@@ -219,7 +218,8 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 - **Nada de datos falsos.** Navidrome es de un solo usuario y privado: no hay éxitos globales, ni
   listas curadas, ni playlists colaborativas. Esas secciones se reemplazan por equivalentes reales
   (agregados recientemente, tus más escuchados, al azar) con la misma presentación.
-- Nav inferior: Inicio · Buscar · Biblioteca · Ajustes. Las descargas offline quedan para el final.
+- Nav inferior: Inicio · Buscar · Biblioteca · Ajustes. Dentro de Biblioteca, las pestañas
+  Playlists · Canciones · Álbumes · Artistas · Descargas.
 
 #### Arreglos en `AndroidManifest.xml` (no obvios)
 - `<uses-permission android:name="android.permission.INTERNET"/>` — Flutter lo agrega solo en debug;
@@ -236,7 +236,7 @@ avisar que está listo. Si el teléfono desaparece, reintentar: se reconecta sol
 | 4 | Búsqueda (`search3`) | ✅ |
 | 5 | Biblioteca: favoritos y artistas seguidos (`star`/`getStarred2`) | ✅ |
 | 6 | Playlists: crear, editar, borrar | ✅ |
-| 7 | Descargas offline | ⏳ siguiente |
+| 7 | Descargas offline | ✅ |
 
 **Extras pedidos sobre la marcha:** el mini reproductor acompaña también a las pantallas de álbum
 y artista (no solo al shell de pestañas); la canción que suena se marca en las listas;
@@ -272,6 +272,37 @@ ahora es un **interruptor de ícono solo**, discreto, que se deja puesto:
 - En la UI se usa **`onReorderItem`**, no `onReorder` (deprecado en Flutter 3.44): el nuevo ya
   entrega el índice de destino compensado por el hueco del elemento arrastrado.
 
+**Descargas offline (etapa 7):** el objetivo es que la app siga sirviendo con el servidor apagado
+o sin Tailscale. Decisiones:
+
+- Los archivos van al **almacenamiento privado de la app** (`getApplicationSupportDirectory`): no
+  pide ningún permiso de Android, no aparecen en la galería ni en el reproductor del sistema, y se
+  limpian solos al desinstalar.
+- Se baja por **`download` y no por `stream`**: `stream` puede transcodificar según cómo esté
+  configurado el servidor, y para guardar queremos el archivo tal cual está en `/srv/musica`. El
+  nombre conserva la extensión original, que viene en el campo `suffix` de la canción.
+- **Se guardan también los metadatos**, no solo el archivo. La pestaña Descargas tiene que poder
+  listarse sin red, y pedirle los títulos a Navidrome justo cuando no se lo puede alcanzar sería
+  absurdo. El índice va en `shared_preferences` como JSON: son unos kilobytes y no justifica traer
+  una base de datos. `Cancion.aJson()` escribe la **misma forma que manda Subsonic**, así
+  `Cancion.desdeJson` lo relee sin un segundo formato.
+- **También se baja la carátula**, si no la pantalla de descargas se vería con todos los marcadores
+  grises justo cuando más se la usa. Se nombra por id de portada, no por canción: todo un álbum
+  comparte imagen. Al borrar, la carátula solo se elimina si no queda ningún tema que la use.
+- **El índice se verifica contra el disco al leerlo.** Un archivo puede desaparecer sin que la app
+  se entere; es preferible que una canción figure como no descargada a que al tocarla no suene nada.
+- **Se baja de a una.** Saturar el túnel con veinte descargas en paralelo hace que no termine
+  ninguna y encima corta lo que esté sonando. Si una falla, se anota el motivo y la tanda sigue.
+- Enganche con el reproductor: `aMediaItem` apunta al archivo local cuando existe. Es **lo único**
+  que hace falta para que suene sin conexión, porque de ahí para abajo al reproductor le da igual
+  de dónde salga el audio.
+- ⚠️ **Cuidado con los rebuilds:** el avance de una descarga cambia varias veces por segundo. Los
+  providers derivados (`archivosDescargadosProvider`, `portadasDescargadasProvider`, etc.) miran
+  `descargasProvider.select(...)` y no el estado entero; sin ese recorte, cada tick reconstruiría
+  todas las portadas y filas en pantalla.
+- `avisar` vive en `ui/avisos.dart` y no en `ui/acciones.dart` porque lo usan tanto las acciones
+  como los widgets, y desde `acciones.dart` los imports se hacían circulares.
+
 **La cola sigue a la playlist que suena (30-07-2026):** la cola era una foto sacada al tocar
 *Reproducir*, así que reordenar la playlist mientras sonaba no cambiaba nada hasta volver a darle
 play. Ahora el handler recuerda **de dónde salió la cola** (`origenCola`, del tipo
@@ -302,16 +333,21 @@ app/lib/
   core/theme.dart                    paleta naranja, temas claro y oscuro
   core/subsonic_client.dart          cliente API (auth, doble dirección, URLs)
   core/auth_storage.dart             credenciales en el Keystore
+  core/descargas_storage.dart        archivos bajados + indice en shared_preferences
   models/biblioteca.dart             Album, Cancion, Artista, Playlist, Favoritos
+  models/descarga.dart               canción guardada en el teléfono
   services/reproductor_handler.dart  motor de audio (just_audio + audio_service)
   state/sesion_providers.dart        estado de sesión (Riverpod)
   state/tema_providers.dart          preferencia de tema
   state/biblioteca_providers.dart    inicio, búsqueda, álbumes y artistas
   state/favoritos_providers.dart     favoritos (fuente única: getStarred2)
   state/playlists_providers.dart     playlists y contenido de cada una
+  state/descargas_providers.dart     cola de descarga, progreso, lo guardado
   state/reproductor_providers.dart   cola, progreso, origen de la cola
   ui/                                pantallas + ui/widgets/ piezas compartidas
   ui/acciones.dart                   encolar, guardar en playlist, diálogos
+  ui/acciones_descarga.dart          descargar y borrar del teléfono
+  ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
 ```
 
 ---

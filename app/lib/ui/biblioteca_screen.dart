@@ -8,7 +8,9 @@ import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
 import 'album_screen.dart';
+import 'avisos.dart';
 import 'artista_screen.dart';
+import 'descargas_screen.dart';
 import 'playlist_screen.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
@@ -22,7 +24,7 @@ class BibliotecaScreen extends ConsumerWidget {
     final textos = Theme.of(context).textTheme;
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -54,6 +56,7 @@ class BibliotecaScreen extends ConsumerWidget {
                   Tab(text: 'Canciones'),
                   Tab(text: 'Álbumes'),
                   Tab(text: 'Artistas'),
+                  Tab(text: 'Descargas'),
                 ],
               ),
               const Expanded(
@@ -65,6 +68,7 @@ class BibliotecaScreen extends ConsumerWidget {
                     _DesdeFavoritos(_Canciones.desde),
                     _DesdeFavoritos(_Albumes.desde),
                     _DesdeFavoritos(_Artistas.desde),
+                    DescargasTab(),
                   ],
                 ),
               ),

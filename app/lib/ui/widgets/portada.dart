@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/descargas_providers.dart';
 import '../../state/sesion_providers.dart';
 
 /// Portada de álbum, canción o artista.
@@ -35,6 +38,23 @@ class Portada extends ConsumerWidget {
     final id = coverArt;
     if (id == null) {
       return _Marcador(lado: lado, forma: forma);
+    }
+
+    // Si el álbum está descargado, la carátula sale del teléfono. Sin esto la
+    // pantalla de descargas se vería con todos los marcadores grises justo
+    // cuando no hay servidor, que es cuando más se usa.
+    final local = ref.watch(portadasDescargadasProvider)[id];
+    if (local != null) {
+      return ClipRRect(
+        borderRadius: forma,
+        child: Image.file(
+          File(local),
+          width: lado,
+          height: lado,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _Marcador(lado: lado, forma: forma),
+        ),
+      );
     }
 
     // Se pide al doble del tamaño en pantalla para que no se vea borrosa en

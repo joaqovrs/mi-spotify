@@ -6,6 +6,7 @@ import '../state/biblioteca_providers.dart';
 import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'acciones_descarga.dart';
 import 'widgets/boton_aleatorio.dart';
 import 'widgets/boton_favorito.dart';
 import 'widgets/estados.dart';
@@ -60,6 +61,16 @@ class AlbumScreen extends ConsumerWidget {
                       Icon(Icons.playlist_add_rounded, size: 20),
                       SizedBox(width: 12),
                       Text('Guardar álbum en playlist'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<void>(
+                  onTap: () => descargar(context, ref, canciones),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.download_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Descargar álbum'),
                     ],
                   ),
                 ),

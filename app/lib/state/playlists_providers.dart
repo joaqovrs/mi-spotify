@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import '../services/reproductor_handler.dart';
+import 'descargas_providers.dart';
 import 'reproductor_providers.dart';
 import 'sesion_providers.dart';
 
@@ -88,8 +89,10 @@ class PlaylistsNotifier extends StateNotifier<AsyncValue<List<Playlist>>> {
     // al final de la cola, no recién la próxima vez que se toque reproducir.
     final handler = _ref.read(reproductorProvider);
     if (handler.origenCola == origenDePlaylist(playlistId)) {
+      final descargadas = _ref.read(archivosDescargadosProvider);
       await handler.agregarACola([
-        for (final c in canciones) aMediaItem(c, _cliente),
+        for (final c in canciones)
+          aMediaItem(c, _cliente, descarga: descargadas[c.id]),
       ]);
     }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -272,6 +273,68 @@ class SubsonicClient {
 
   /// URL de streaming de una canción, lista para el reproductor.
   Uri urlStream(String id) => construirUri('stream', {'id': id});
+
+  // --------------------------------------------------------------- Descargas
+
+  /// Baja el archivo **original** de una canción al teléfono.
+  ///
+  /// Usa `download` y no `stream`: `stream` puede transcodificar según la
+  /// configuración del servidor, y para guardar en disco queremos el archivo
+  /// tal cual está en `/srv/musica`.
+  ///
+  /// Devuelve el tamaño escrito.
+  Future<int> descargarCancion(
+    String id,
+    String destino, {
+    void Function(double)? onProgreso,
+  }) {
+    return _bajarA(
+      (base) => _uriEn(base, 'download', {'id': id}),
+      destino,
+      onProgreso: onProgreso,
+    );
+  }
+
+  /// Baja la carátula para poder mostrarla sin servidor.
+  Future<int> descargarPortada(String coverArt, String destino, {int tamano = 640}) {
+    return _bajarA(
+      (base) => _uriEn(base, 'getCoverArt', {'id': coverArt, 'size': '$tamano'}),
+      destino,
+    );
+  }
+
+  /// Escribe un endpoint binario a disco.
+  ///
+  /// Se resuelve la dirección igual que en el resto del cliente, pero acá no
+  /// se reintenta con la otra: una descarga puede durar minutos y volver a
+  /// empezarla sola, sin avisar, sorprendería más de lo que ayudaría.
+  ///
+  /// Reusa el Dio normal a propósito: su `receiveTimeout` cuenta el tiempo
+  /// **entre trozos** recibidos, no el total, así que no corta un archivo
+  /// grande — solo uno que dejó de llegar.
+  Future<int> _bajarA(
+    Uri Function(String baseUrl) arma,
+    String destino, {
+    void Function(double)? onProgreso,
+  }) async {
+    final url = _activa ?? await _resolver();
+
+    try {
+      await _dio.downloadUri(
+        arma(url),
+        destino,
+        onReceiveProgress: onProgreso == null
+            ? null
+            : (recibido, total) {
+                if (total > 0) onProgreso(recibido / total);
+              },
+      );
+    } on DioException catch (e) {
+      throw SubsonicException(_mensajeDeRed(e));
+    }
+
+    return File(destino).length();
+  }
 
   // ---------------------------------------------------------------- Biblioteca
 
