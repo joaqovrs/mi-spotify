@@ -36,7 +36,7 @@ class _BuscarScreenState extends ConsumerState<BuscarScreen> {
   /// Espera a que dejes de escribir antes de consultar.
   ///
   /// Sin esto, "beatles" dispararía siete búsquedas contra el servidor, y
-  /// desde fuera de casa cada una viaja por el túnel de Tailscale.
+  /// desde fuera de casa cada una sale y vuelve por internet.
   void _alEscribir(String texto) {
     _retardo?.cancel();
     _retardo = Timer(const Duration(milliseconds: 350), () {

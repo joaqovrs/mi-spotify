@@ -10,7 +10,7 @@ import 'avisos.dart';
 ///
 /// No espera a que terminen: la cola avanza sola de a una y el progreso se ve
 /// en la pestaña Descargas. Bloquear la pantalla hasta bajar un disco entero
-/// por el túnel de Tailscale no sería usable.
+/// desde fuera de casa no sería usable.
 void descargar(
   BuildContext context,
   WidgetRef ref,

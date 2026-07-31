@@ -93,8 +93,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       autocorrect: false,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Servidor (Tailscale)',
-                        hintText: '100.91.22.33:4533',
+                        labelText: 'Servidor (desde afuera)',
+                        hintText: 'mimusic.duckdns.org:34533',
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'Ingresá la dirección del servidor'
@@ -114,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 6),
                     Text(
                       'Si la completás, en casa se conecta por acá — más rápido '
-                      'y sin depender de Tailscale.',
+                      'y sin salir a internet.',
                       style: textos.bodySmall,
                     ),
                     const SizedBox(height: 14),
@@ -169,7 +169,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Fuera de casa necesitás Tailscale activo en el teléfono.',
+                      'Fuera de casa se conecta por la dirección de arriba; '
+                      'no hace falta nada más en el teléfono.',
                       textAlign: TextAlign.center,
                       style: textos.bodySmall,
                     ),

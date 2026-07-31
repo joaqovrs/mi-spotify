@@ -236,11 +236,11 @@ class SubsonicClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'El servidor no respondió a tiempo. Si estás fuera de casa, '
-            'revisá que Tailscale esté activo.';
+        return 'El servidor no respondió a tiempo. Revisá que la laptop esté '
+            'encendida y con internet.';
       case DioExceptionType.connectionError:
-        return 'No se pudo conectar al servidor. Revisá la dirección y que '
-            'Tailscale esté activo.';
+        return 'No se pudo conectar al servidor. Revisá la dirección y que la '
+            'laptop esté encendida.';
       case DioExceptionType.badResponse:
         return 'El servidor respondió con un error '
             '(${e.response?.statusCode ?? 'sin código'}).';

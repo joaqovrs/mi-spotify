@@ -21,7 +21,7 @@ class EstadoDescargas {
   /// Lo que ya está en el teléfono.
   final List<Descarga> guardadas;
 
-  /// Lo que espera turno. Se baja de a una: saturar el túnel de Tailscale con
+  /// Lo que espera turno. Se baja de a una: saturar la subida de casa con
   /// veinte descargas en paralelo hace que ninguna termine y encima corta la
   /// reproducción que esté sonando.
   final List<Cancion> pendientes;

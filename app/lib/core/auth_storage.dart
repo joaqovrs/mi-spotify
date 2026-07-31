@@ -3,8 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Credenciales del servidor de música.
 ///
 /// El mismo Navidrome se alcanza por dos caminos: la IP de la red de casa
-/// (rápida, sin VPN) y la del tailnet (funciona desde cualquier lado, con
-/// Tailscale activo). Se guardan las dos y la app elige sola.
+/// (rápida, sin salir a internet) y el dominio DDNS con el puerto abierto
+/// (funciona desde cualquier lado). Se guardan las dos y la app elige sola.
 class Credenciales {
   const Credenciales({
     required this.urlRemota,
