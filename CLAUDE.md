@@ -72,10 +72,12 @@ en la propia Debian. Ver Fase 5.
   buscador, cola con aleatorio y "agregar a la cola", biblioteca de favoritos, playlists con crear,
   editar y borrar, y **descargas offline** (probado OK el 30-07-2026: se descarga, se ve la pestaña
   con caratulas y reproduce sin servidor). Detalle en la seccion Fase 4.
-- 🔄 **La app pasa a llamarse "Mi Music" (31-07-2026):** login solo con usuario y contrasena,
-  **registro de usuarios** desde la app contra un servicio nuevo en el servidor, y todos los
-  textos en espanol neutro sin tildes. Falta el icono del APK (esperando el arte) y desplegar el
-  servicio de registro. Detalle en Fase 4 y Fase 6.
+- ✅ **La app pasa a llamarse "Mi Music" (31-07-2026):** icono propio (nota naranja sobre fondo
+  oscuro, clasico + adaptativo), login solo con usuario y contrasena, **registro de usuarios**
+  desde la app contra un servicio nuevo en el servidor, y todos los textos en espanol neutro sin
+  tildes. Detalle en Fase 4 y Fase 6.
+- ✅ **Fase 6 completa en la red local (31-07-2026):** el servicio de registro crea usuarios
+  no-admin en Navidrome. Falta abrir el puerto `34534` para que funcione desde afuera.
 - ✅ **Fase 5 completa (30-07-2026):** acceso remoto migrado de Tailscale a **puerto abierto +
   DDNS**. Sin CGNAT (confirmado por `traceroute`), IP local fija `192.168.1.194`, port forward
   `WAN:34533 → 192.168.1.194:4533`, dominio **`mimusic.duckdns.org`** actualizado por `cron` cada
@@ -90,7 +92,8 @@ en la propia Debian. Ver Fase 5.
 | ~~Direccion remota en la app~~ | ✅ Resuelto el 31-07-2026: las direcciones dejaron de ser campos del login y viven en `core/config.dart`. Quien tenia guardada la del tailnet queda arreglado al actualizar el APK. |
 | **Cable de red** | La laptop esta por WiFi (`wlp1s0`); ethernet seria mas estable para 24/7. |
 | **Token de DuckDNS expuesto** | El token quedo a la vista en una captura. El usuario decidio **no regenerarlo** (30-07-2026). Si algun dia se recrea, hay que actualizar `~/duckdns/duck.sh`. |
-| **Desplegar el servicio de registro** | Crear `infra/.env` en la Debian, `docker compose up -d` y **segundo port forward** `WAN:34534 → 192.168.1.194:8080`. Ver Fase 6. |
+| **Port forward del registro** | El servicio ya corre y se probo OK en la red local. Falta la regla `WAN:34534 → 192.168.1.194:8080` (TCP) en el router para poder registrarse desde afuera. |
+| **APK con todo lo nuevo** | Compilar e instalar: nombre Mi Music, icono, login simple y registro. Sin esto el telefono sigue con la version vieja. |
 | **Icono del APK** | Esperando el arte definitivo (imagen nueva o archivo de Figma). Mientras tanto sigue el icono por defecto de Flutter. |
 
 ### Datos del servidor
@@ -515,7 +518,7 @@ Mejoras opcionales:
   la contraseña no viaje en texto plano. Requiere abrir tambien el 80/443 para el desafio ACME.
 - **Fail2ban** sobre el log de Navidrome contra intentos de login repetidos.
 
-### Fase 6 — Servicio de registro de usuarios 🔄 ESCRITO, SIN DESPLEGAR (31-07-2026)
+### Fase 6 — Servicio de registro de usuarios ✅ FUNCIONANDO EN LA RED LOCAL (31-07-2026)
 
 Para que alguien sin cuenta pueda crearse una desde la app, sin que el dueño tenga que entrar a
 Navidrome cada vez.
@@ -566,12 +569,24 @@ responde. Tambien hay `GET /salud`.
 3. **Segundo port forward** en el router: TCP `34534` → `192.168.1.194:8080`.
 4. Verificar desde el telefono con datos moviles: `http://mimusic.duckdns.org:34534/salud`.
 
-⚠️ **Sin probar todavia.** El servicio esta escrito pero nunca se ejecuto: en el Windows de
-desarrollo no hay ni Docker ni Python. Lo que esta confirmado contra el Navidrome real (0.63.2) es
-que `/auth/login` y `/api/user` **existen** y responden `401` sin credenciales. Los nombres de los
-campos que manda (`userName`, `name`, `password`, `isAdmin`) salen de la API nativa de Navidrome y
-**hay que confirmarlos en la primera prueba** — si el registro devuelve `502`, el log del
-contenedor imprime lo que contesto Navidrome y ahi se ve que campo no le gusto.
+✅ **Probado el 31-07-2026 en la red local.** El `curl` del paso 2 devolvio `{"ok": true}` y el
+usuario aparecio en `Settings → Users` de Navidrome **sin la marca de admin**. Con eso quedan
+confirmados los nombres de campo de la API nativa (`userName`, `name`, `password`, `isAdmin`), que
+eran la parte incierta: estan tomados de Navidrome 0.63.2.
+
+Falta solo el **paso 3 (port forward `34534`)** para que se pueda usar desde afuera.
+
+⚠️ **Docker congela las variables de entorno al crear el contenedor.** Editar `infra/.env` con el
+servicio ya levantado no cambia nada: hay que correr `docker compose up -d --force-recreate`. Esto
+costo una vuelta en la primera prueba, porque el sintoma es engañoso — el servicio responde bien,
+pero rechaza el codigo de invitacion correcto.
+
+El **codigo de invitacion no se documenta aqui a proposito**: vive en `infra/.env`, que esta en el
+`.gitignore` justamente para que estos valores no lleguen a GitHub. Claude lo tiene anotado en su
+memoria local del proyecto.
+
+**Freno anti-fuerza-bruta:** 5 intentos fallidos por IP bloquean 10 minutos. El contador vive en
+memoria, asi que `docker compose restart registro` lo limpia si molesta durante las pruebas.
 
 ### Multiusuario (respondido el 30-07-2026, actualizado el 31-07-2026)
 
