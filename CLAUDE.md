@@ -104,7 +104,7 @@ en la propia Debian. Ver Fase 5.
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
-| **Probar Android Auto** | El arbol (`getChildren`/`playFromMediaId`) esta escrito y con `flutter analyze`/`flutter test` en verde, pero nunca se corrio contra Android Auto de verdad. Falta el Desktop Head Unit de Android Studio o un auto — ver la seccion de Android Auto en Fase 4. |
+| ~~Probar Android Auto~~ | ✅ Probado el 02-08-2026 en un auto real (no hizo falta el Desktop Head Unit): las cuatro carpetas aparecen y la reproduccion anda. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
 | **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
 | **Paso 8 del CI/CD** | Ya desbloqueado: falta el workflow que publique el APK firmado en GitHub Releases al taguear, con el keystore como secret del repo. |
@@ -670,9 +670,10 @@ Biblioteca: Playlists, Albumes, Artistas y Descargas.
   que usa el resto de la app (`origenDePlaylist`), asi que reordenar esa playlist desde el telefono
   mientras suena en el auto sigue moviendo lo que esta sonando — igual que ya pasaba entre la
   pantalla de playlist y la cola.
-- **No se puede probar sin auto ni Desktop Head Unit.** Queda pendiente correrlo con el DHU de
-  Android Studio (`adb forward tcp:5277 tcp:5277` + *Fuentes desconocidas* activado en Ajustes de
-  desarrollador de la app Android Auto del telefono) o con un auto de verdad.
+- ✅ **Probado el 02-08-2026 en un auto real**, sin pasar por el Desktop Head Unit. Hizo falta
+  activar *Fuentes desconocidas* en Ajustes de desarrollador de la app Android Auto del telefono
+  (ver mas abajo): sin eso, Auto ni siquiera ofrece la app como reproductor por venir sideloaded y
+  no de Play Store.
 
 ### Fase 5 — Acceso remoto por puertos abiertos ✅ COMPLETA (30-07-2026)
 
