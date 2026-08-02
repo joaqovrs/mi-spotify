@@ -9,8 +9,14 @@ mediante una **app Android propia**.
 > `mi-spotify` **a proposito**: renombrarlos obligaria a reclonar el repo, rehacer la deploy key y
 > reinstalar la app como si fuera otra, perdiendo sesion y descargas. Es solo el nombre visible.
 
-> **Idioma:** todo el texto de la app y de este documento va en **espanol neutro y sin tildes**
-> (decision del usuario, 31-07-2026). Se conserva la ñ. Aplica tambien a las respuestas de Claude.
+> **Idioma:** todo el texto de la app va en **español neutro y correctamente acentuado**
+> (decisión del usuario, 01-08-2026). Aplica también a las respuestas de Claude.
+>
+> ⚠️ **Esto revierte la decisión del 31-07-2026**, que era escribir sin tildes. Los textos visibles
+> de `app/lib` ya están corregidos; **los comentarios del código y este documento siguen sin
+> tildes** de la etapa anterior, así que conviven los dos estilos hasta que se decida migrarlos.
+> No es un descuido: son unos 700 renglones de comentarios y un `CLAUDE.md` entero, y nada de eso
+> se ve en la app.
 
 ## Objetivo
 Reemplazar Spotify con una biblioteca propia servida desde casa y escuchable desde fuera de casa.
@@ -92,7 +98,9 @@ en la propia Debian. Ver Fase 5.
 | ~~Direccion remota en la app~~ | ✅ Resuelto el 31-07-2026: las direcciones dejaron de ser campos del login y viven en `core/config.dart`. Quien tenia guardada la del tailnet queda arreglado al actualizar el APK. |
 | **Cable de red** | La laptop esta por WiFi (`wlp1s0`); ethernet seria mas estable para 24/7. |
 | **Token de DuckDNS expuesto** | El token quedo a la vista en una captura. El usuario decidio **no regenerarlo** (30-07-2026). Si algun dia se recrea, hay que actualizar `~/duckdns/duck.sh`. |
-| **Instalar el APK firmado** | Ya esta en el telefono en `/sdcard/Download/mi-music.apk` (tamaño verificado). ⚠️ **Hay que desinstalar la app primero**: cambio la clave de firma y Android rechaza la actualizacion. Se pierden sesion y descargas. |
+| **Instalar el APK del 01-08-2026** | En el telefono, en `/sdcard/Download/mi-music.apk` (tamaño verificado). Trae la fila de reproduccion como hoja, el pie al azar, encolar a continuacion, el corazon en el mini reproductor, el album en *Reproduciendo*, quitar favoritos desde la biblioteca, el icono de Biblioteca y el logo nuevo. **Se instala encima, sin desinstalar:** se comprobo que la version puesta en el telefono ya esta firmada con la clave propia (mismo SHA-256, `16884d0d…`), asi que Android la acepta como actualizacion y **no** se pierden sesion ni descargas. |
+| **Probar el arrastre dentro de la hoja** | Sin verificar. La fila de reproduccion paso de pantalla completa a `showModalBottomSheet`, y ahi el `SliverReorderableList` comparte el scroll con la hoja: el gesto de arrastrar una cancion puede pelearse con el de cerrar la hoja tirando hacia abajo. Si al arrastrar se cierra en vez de mover, hay que separar los gestos. |
+| **Todo el trabajo del 01-08-2026 sin commitear** | 15 archivos modificados y 2 nuevos (`ui/cola_sheet.dart`, `test/marca_test.dart`) en el arbol de trabajo de `docs/fase-5-puertos-abiertos`, **sin un solo commit**. Decision del usuario: sigue agregando cosas antes de cerrar la tanda. Nada de esto esta respaldado en el remoto. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
 | **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
@@ -277,6 +285,17 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 Tiene que decir `Signer #1 certificate DN: CN=Joaquin Varas, O=Mi Music, C=CL`. Si dice
 `CN=Android Debug, O=Android, C=US`, falta el `key.properties`.
 
+**Para saber si hace falta desinstalar antes de actualizar**, no hay que adivinar: se compara el
+certificado del APK nuevo contra el de la version que ya esta puesta en el telefono. Si el SHA-256
+coincide, Android acepta la actualizacion y se conservan sesion y descargas.
+
+```powershell
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb shell pm path com.joaqovrs.mi_spotify     # devuelve la ruta del base.apk
+& $adb pull "<esa ruta>" instalada.apk
+# y despues el mismo apksigner verify --print-certs de arriba sobre instalada.apk
+```
+
 ⚠️ `keytool -printcert -jarfile` **no sirve**: solo lee firmas v1 (JAR) y este APK va con esquema
 v2. Contesta "No es un archivo jar firmado" aunque este perfectamente firmado.
 
@@ -396,6 +415,130 @@ se aplica a la reproduccion — igual que Spotify. Detalles:
 - Funciona igual con el aleatorio encendido, porque ese modo **no toca el orden de la cola**, solo
   el recorrido. Los indices siguen coincidiendo con la lista de la pantalla.
 
+**Fila de reproduccion (01-08-2026).** `ui/cola_sheet.dart`, se abre con el icono de cola del AppBar
+de *Reproduciendo*. Tiene dos partes: la cola y un pie de sugerencias al azar.
+
+**Es una hoja modal, no una pantalla.** `showModalBottomSheet` con `isScrollControlled`, `constraints`
+de `maxHeight: alto * 0.66` y `showDragHandle`. Asi la portada de lo que suena queda a la vista por
+arriba: la fila es una consulta rapida a "que viene ahora", no un lugar al que uno se muda. La
+primera version era una pantalla completa con `Navigator.push` y tapaba todo.
+
+**Se muestra desde la cancion actual hacia adelante**, y la que suena queda siempre primera. Esto dio
+dos vueltas y conviene no volver a discutirlo:
+
+1. Primero se mostraba desde la actual. El usuario lo reporto **como un bug de borrado**: al tocar
+   una cancion de mas abajo, las de arriba desaparecian y parecia que la app las eliminaba.
+2. Se paso a mostrar la cola entera. Al probarlo, el usuario pidio volver: *"la funcion de la fila
+   es saber que viene despues de la cancion que estas escuchando, no lo que escuchaste antes"*.
+
+Asi que vuelve el comportamiento original, ahora **a pedido explicito**. Consecuencia: los indices
+de la lista de abajo estan **corridos** respecto de los de la cola real, y hay que sumarles
+`actual + 1` antes de pasarlos a `moverEnCola` o a `skipToQueueItem`. Las dos puntas (`desde` y
+`hasta`) se corren igual, asi que la convencion de `onReorderItem` se conserva.
+
+⚠️ Las canciones que quedan atras salen **de la vista, no de la cola**. Borrarlas de verdad dejaria
+al boton de anterior sin nada a lo que volver.
+
+- **La cancion actual sale de `playbackState.queueIndex`**, no de buscar el id del `mediaItem` en la
+  lista: una cola admite la misma cancion repetida y por id se encontraria la otra. Igual se acota
+  contra el largo, porque el estado puede llegar un instante desfasado de una cola recien cambiada.
+- **El arrastre sale de un asa** (`ReorderableDragStartListener` sobre el icono) y no de la fila
+  entera, asi tocar la fila sigue saltando a esa cancion sin pelearse con el gesto. Es distinto de
+  la playlist, donde el arrastre es por presion sostenida sobre la fila completa.
+- **Sin duracion en las filas de la cola**, a pedido: ahi importa el orden, no cuanto dura cada tema.
+  Las sugerencias de abajo si la muestran, porque son `FilaCancion` normales.
+- Reordenar aqui **no toca la playlist de origen**, solo la cola — al reves de lo que hace editar
+  la playlist, que si baja a la cola cuando es la que suena.
+
+**El pie «Al azar de tu biblioteca» (01-08-2026).** Debajo de la cola hay un bloque de canciones
+sueltas sacadas al azar de todo el servidor (`getRandomSongs`, via `sugerenciasAlAzarProvider`).
+
+- **Son de toda la biblioteca, no la continuacion de lo que suena.** Es un pozo del que sacar cosas
+  para la fila. Por eso el titulo dice *Al azar de tu biblioteca* y no *Reproduciendo en modo
+  aleatorio desde X*, que es lo que dice Spotify: ahi esa seccion **si** es la continuacion real, y
+  copiarle el texto seria mentir sobre lo que hace el bloque.
+- **Deslizar** manda la cancion a continuacion y **tocarla** la reproduce ya. En los dos casos el
+  bloque se sortea de nuevo, para que no quede a la vista lo que uno acaba de usar.
+- Tocar una **no arranca una cola nueva**: la mete a continuacion y salta. Asi escuchar algo
+  sugerido no borra la fila que venias armando. Con la cola vacia, agregar ya arranca la
+  reproduccion, asi que ahi **no** se salta — saltar la pasaria de largo.
+- Las filas son `FilaCancion`, que ya trae puesto el deslizar hacia la derecha, el menu `···` y el
+  corazon. No hizo falta widget nuevo.
+- `sugerenciasAlAzarProvider` va **aparte** de `cancionesAlAzarProvider` aunque pidan lo mismo: ese
+  otro alimenta la pestaña Canciones, y re-sortearlo en cada toque le cambiaria la lista al usuario
+  en otra pantalla sin que hubiera pedido nada.
+- ⚠️ **Con el aleatorio encendido el orden que se ve no es el orden en que va a sonar**, porque ese
+  modo cambia el recorrido y no la cola.
+
+**La duracion de la fila va en ancho fijo (01-08-2026).** En `FilaCancion`, el bloque de la derecha
+es `[icono de descarga][duracion][menu]`. Poppins **no es monoespaciada**, asi que `0:19` mide menos
+que `4:02` y el icono de descargado quedaba corrido unos pixeles en cada fila — bien visible al
+mirar una lista entera en columna. La duracion va ahora en un `SizedBox(width: 52)` pegado a la
+derecha, que ademas alcanza para `1:02:33`, el formato mas largo que arma `formatearDuracion`. El
+ecualizador de "esta sonando" comparte el mismo hueco, o desalinearia igual.
+
+**El icono de Biblioteca deja de ser un corazon (01-08-2026).** Pasa a `library_music`. Un corazon
+decia "favoritos", y la pestaña es bastante mas que eso: tambien tiene playlists, albumes, artistas
+y descargas.
+
+**Encolar pasa a ser "a continuacion" (01-08-2026).** Deslizar una cancion la mandaba al **final**
+de la cola, asi que con un album de quince temas encolar algo significaba esperar el album entero
+para escucharlo. Ahora se inserta **justo despues de la que suena**, y el resto sigue detras en su
+orden original. Consecuencias:
+
+- Son **dos metodos distintos** en el handler, y hay que no confundirlos: `agregarACola` (al final)
+  quedo para la sincronizacion con la playlist que suena, donde la cola tiene que seguir siendo un
+  calco de la lista; `agregarComoSiguiente` (en el medio) es el de los botones de la interfaz.
+- Insertar en el medio **rompe ese calco**, asi que `agregarComoSiguiente` pone `origenCola` en
+  null. Sin eso, reordenar despues la playlist desde su pantalla moveria la cancion equivocada,
+  porque los indices de la lista dejaron de coincidir con los de la cola.
+- Encolar dos veces seguidas deja **primera a la ultima** que agregaste, porque cada una se mete
+  pegada a la que suena. Es lo mismo que hace *Reproducir a continuacion* de Spotify.
+- Los textos acompañan al cambio: el menu dice *Reproducir a continuacion*, el fondo del deslizado
+  dice *A continuacion* y el aviso *Suena a continuacion*. Con la cola vacia sigue diciendo
+  *Reproduciendo*, porque ahi no hay un "despues" y lo que hace es arrancar.
+- ⚠️ **Con el aleatorio encendido no queda garantizado que suene a continuacion:** `just_audio`
+  inserta en la lista, pero el recorrido lo decide el orden sorteado.
+
+**Mini reproductor: corazon en vez de siguiente (01-08-2026).** A la derecha queda pausa/reanudar y
+a su izquierda el corazon. Saltar de tema ya se hace desde la notificacion o la pantalla completa,
+mientras que marcar favorito obligaba a abrir el reproductor entero.
+
+**El album arriba de la caratula (01-08-2026).** En *Reproduciendo*, el nombre del album va sobre la
+portada como contexto de lo que suena — el equivalente al "reproduciendo desde" de otras apps. Sale
+de `MediaItem.album`, que puede venir nulo: en ese caso no se deja el hueco.
+
+**El logo del login pasa a ser el icono de la app (01-08-2026).** `LogoMarca` dibujaba una nota
+generica de Material sobre un cuadrado naranja; ahora muestra `assets/icono/icono.png`, el mismo
+icono que queda en el lanzador. Tres cosas que costaron mas de lo que parecen:
+
+- **El icono no estaba empaquetado.** Existia solo para `flutter_launcher_icons`, que lo lee en
+  tiempo de build y no lo mete en el APK. Hubo que declararlo en la seccion `assets:` de
+  `pubspec.yaml`. Se nombra **el archivo y no la carpeta**, para no arrastrar tambien
+  `icono_foreground.png`, que solo le sirve al plugin.
+- **El redondeo se replica a mano** (`tamano * 0.2246`, que es el `rx="115"` sobre 512 del SVG) para
+  que la sombra siga el borde del dibujo en vez de asomarse por las esquinas. Si algun dia cambia el
+  `rx` del SVG, hay que cambiar tambien esa constante.
+- **`cacheWidth` no es opcional:** el archivo es de 1024 px y el logo se ve a 76. Sin el tope se
+  decodifican 4 MB en memoria para un dibujo del tamaño de un pulgar.
+
+De paso se arreglo algo que estaba mal desde antes: en el login el logo colgaba de una `Column` con
+`crossAxisAlignment: stretch`, que le impone ancho forzado y convertia el cuadrado en una **franja
+naranja de lado a lado**. Ahora `LogoMarca` se centra sola, asi que no depende de como la envuelva
+cada pantalla — y la `Center` que el registro tenia por fuera quedo de mas y se saco.
+
+`test/marca_test.dart` comprueba que el asset este en el bundle. Es el unico error de esta pieza
+que **no** aparece en `flutter analyze`: la ruta se resuelve recien al dibujar, y si esta mal el
+login sale con un cuadro gris.
+
+**Quitar el corazon desde la biblioteca (01-08-2026).** La pestaña *Canciones* armaba `FilaCancion`
+**sin** `onAlternarFavorito`, asi que su menu `···` no ofrecia desmarcar: habia que ir a buscar la
+cancion a su album. Se agrego, y con eso sacar el corazon tambien saca la fila de la lista, porque
+`getStarred2` es la unica fuente de verdad. Las acciones que devuelven error ahora pasan por
+`alternarFavorito` de `ui/acciones.dart`, que lo atrapa y avisa; el notifier lo relanza y sin
+alguien que lo tome quedaba como una excepcion suelta. **Pendiente:** las pestañas *Albumes* y
+*Artistas* siguen sin forma de desmarcar (no tienen menu `···`).
+
 **Favoritos (etapa 5):** `getStarred2` es la **unica** fuente de verdad. Los albumes y canciones
 que llegan de otros endpoints tambien traen si estan marcados, pero mezclar ambas fuentes produce
 incoherencias (desmarcas algo y el listado viejo lo sigue mostrando lleno). Como los ids de Subsonic
@@ -428,10 +571,19 @@ Meter las credenciales de admin en el APK es publicarlas — un APK se abre con 
 herramienta y adentro esta todo. Por eso la app le habla a un **servicio aparte** en el servidor
 (`infra/registro/`), que es el unico que conoce esas credenciales. Ver **Fase 6**.
 
-**Textos en espanol neutro sin tildes (31-07-2026).** Decision del usuario. Se quito el voseo
-(`Ingresa` → `Escribe`, `tienes` → `tienes`, `aqui` → `aqui`) y todas las tildes de `app/lib` y
-`app/test`. **Se conserva la ñ**: no es una tilde y quitarla convierte "ano" en otra palabra. El
-unico acento que sobrevive a proposito esta en `test/descargas_test.dart`, porque ese test
+**Textos en espanol neutro sin tildes (31-07-2026) — REVERTIDO el 01-08-2026.** Se quito el voseo
+y todas las tildes de `app/lib` y `app/test`. **Al dia siguiente el usuario pidio lo contrario**:
+que la app estuviera bien acentuada. Ver la nota de idioma al principio del documento.
+
+Lo que sobrevive de aquella tanda: **la ausencia de voseo** (`Ingresa` → `Escribe`,
+`Mantene` → `Manten`). Lo que se deshizo: las tildes.
+
+⚠️ Al reponerlas se cayeron **dos tests** que comparaban contra el texto viejo
+(`modelos_test.dart` esperaba `'Sin titulo'` y `playlists_test.dart`, `'1 cancion · 3 min'`). Es
+la trampa de esta clase de cambio: los textos de cara al usuario estan clavados en asserts, asi
+que **no alcanza con `flutter analyze`** para saber si quedo bien.
+
+El unico acento que ya existia a proposito esta en `test/descargas_test.dart`, porque ese test
 justamente verifica que `nombreSeguro` limpie los caracteres no ASCII de un nombre de archivo. Si la activa
 se cae a mitad de uso, la descarta y vuelve a resolver, asi salir de casa con la app abierta no la
 rompe. Si el servidor **contesta pero rechaza** (contraseña mal), corta ahi en vez de seguir probando.
@@ -459,7 +611,8 @@ app/lib/
   ui/registro_screen.dart            crear cuenta con codigo de invitacion
   ui/widgets/marca.dart              logo y cartel de error, compartidos login/registro
   ui/                                pantallas + ui/widgets/ piezas compartidas
-  ui/acciones.dart                   encolar, guardar en playlist, dialogos
+  ui/cola_sheet.dart                 fila de reproduccion (hoja modal) + al azar
+  ui/acciones.dart                   encolar, favoritos, guardar en playlist, dialogos
   ui/acciones_descarga.dart          descargar y borrar del telefono
   ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
 ```
@@ -626,6 +779,43 @@ memoria local del proyecto.
 **Freno anti-fuerza-bruta:** 5 intentos fallidos por IP bloquean 10 minutos. El contador vive en
 memoria, asi que `docker compose restart registro` lo limpia si molesta durante las pruebas.
 
+### Etiquetas: por que Navidrome parte una recopilacion en varios albumes (02-08-2026)
+
+Se subio una carpeta `Chris Cornell Covers` armada a mano y Navidrome la mostro como **12 albumes
+distintos**. No es un fallo de configuracion:
+
+**Navidrome no agrupa por carpeta.** Identifica un album por la dupla **AlbumArtist + Album** de las
+etiquetas de cada archivo (`PID.Album`, cuyo valor por defecto es
+`musicbrainz_albumid|albumartistid,album,albumversion,releasedate`). En esa carpeta habia 12 valores
+distintos de `album` y el campo `album_artist` estaba **vacio en los 43 archivos**, asi que caia al
+`artist`, que tambien variaba (Chris Cornell, Soundgarden, Eleven, The Beat Bugs). De ahi la
+fragmentacion.
+
+Existe `PID.Album = "folder"`, que agrupa por carpeta, pero **se descarto**: aplica a la biblioteca
+entera, dispara un rescan completo y romperia cualquier album repartido en subcarpetas (`CD1`,
+`CD2`). Ademas las etiquetas seguirian mal para cualquier otro reproductor.
+
+**La solucion es `scripts/unificar-album.ps1`** (con su `.bat` para doble clic), que reescribe
+`album`, `album_artist` y opcionalmente `track` y `compilation` de una carpeta entera. Decisiones:
+
+- **ffmpeg con `-c copy`**: reescribe las etiquetas sin recomprimir el audio. Se instala con
+  `winget install Gyan.FFmpeg`.
+- **`-map 0` es lo que salva la caratula.** Sin eso ffmpeg se queda solo con el audio y tira la
+  imagen incrustada, que en un MP3 viaja como un flujo de video `mjpeg`.
+- **`-id3v2_version 3`**: ffmpeg escribe ID3v2.4 por defecto y Windows lee mucho mejor la 2.3.
+- **Se escribe a un temporal y recien despues se reemplaza** el original. ffmpeg no puede escribir
+  sobre el archivo que esta leyendo, y ademas asi un corte a mitad de camino no deja el archivo
+  mutilado.
+- **El `artist` de cada cancion no se toca**: es la informacion real de quien toca cada tema. Lo que
+  agrupa es `album_artist`, que es justamente para esto.
+- Simula por defecto; escribe solo con `-Aplicar`, igual que `ordenar-musica.ps1`.
+
+⚠️ **Los `.ps1` con tildes hay que guardarlos en UTF-8 CON BOM.** Windows PowerShell 5.1 lee los
+scripts sin BOM como ANSI, asi que una `ó` se parte en dos bytes y el parser explota con errores
+sin sentido (`Token '{' inesperado`) en lineas que no tienen nada raro. Costo un rebote entero.
+El `.bat` va aparte: lleva `chcp 65001` y **sin** BOM, porque `cmd` interpreta el BOM como un
+comando.
+
 ### Multiusuario (respondido el 30-07-2026, actualizado el 31-07-2026)
 
 **Varias personas pueden usar la app con sus propias playlists sin tocar una linea de codigo.**
@@ -639,10 +829,26 @@ asi que ya no hace falta crear usuarios a mano — aunque sigue siendo posible d
 `Settings → Users` de Navidrome, **sin marcar admin**. La biblioteca de musica si es compartida:
 todos ven lo mismo de `/srv/musica`.
 
-Unico detalle conocido: `getPlaylists` de Subsonic devuelve las propias **mas las marcadas como
-publicas** por cualquier usuario. Las que crea la app salen privadas (default de Navidrome), pero si
-alguien marca una como publica desde la web, aparece para todos y **la app no muestra de quien es**.
-Si llega a molestar, se arregla con un cartelito de "compartida por X" en `FilaPlaylist`.
+⚠️ **Un admin ve las playlists privadas de todos los demas (comprobado el 02-08-2026).** Se registro
+una segunda persona, creo sus playlists, y aparecieron en la biblioteca de la cuenta de admin.
+
+Esto **no** es un fallo de la app ni de la configuracion. En Navidrome, `getPlaylists` de Subsonic
+devuelve **todas** las playlists del servidor cuando quien pregunta es administrador, sin filtrar
+por dueño ni por visibilidad. Hay un issue abierto al respecto
+([navidrome#4498](https://github.com/navidrome/navidrome/issues/4498)). Al reves si funciona: una
+cuenta comun solo ve las suyas y las publicas.
+
+Descartado como causa: `DefaultPlaylistPublicVisibility` esta en **false** desde Navidrome 0.53.0 y
+`infra/docker-compose.yml` no la toca, asi que las playlists que crea la app **si** nacen privadas.
+Lo que las expone es el privilegio de admin del que consulta, no su visibilidad.
+
+Dos formas de taparlo, ninguna aplicada todavia:
+
+1. **Escuchar con una cuenta comun** y dejar la de admin solo para administrar. Es lo que arregla el
+   problema de raiz, sin tocar codigo.
+2. **Filtrar en la app por dueño.** `getPlaylists` devuelve `owner` y `public` en cada playlist, y
+   la app sabe con que usuario inicio sesion; hoy `Playlist.desdeJson` **no lee ninguno de los dos**.
+   Con eso se pueden esconder las ajenas, o mostrarlas con un cartelito de "compartida por X".
 
 ---
 
