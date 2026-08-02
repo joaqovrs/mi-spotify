@@ -42,7 +42,7 @@ class AlbumScreen extends ConsumerWidget {
           ),
           if (canciones.isNotEmpty)
             PopupMenuButton<void>(
-              tooltip: 'Mas opciones',
+              tooltip: 'Más opciones',
               itemBuilder: (_) => [
                 PopupMenuItem<void>(
                   onTap: () => encolar(context, ref, canciones),
@@ -50,7 +50,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.queue_music_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Agregar album a la cola'),
+                      Text('Reproducir álbum a continuación'),
                     ],
                   ),
                 ),
@@ -60,7 +60,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.playlist_add_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Guardar album en playlist'),
+                      Text('Guardar álbum en playlist'),
                     ],
                   ),
                 ),
@@ -70,7 +70,7 @@ class AlbumScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.download_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Descargar album'),
+                      Text('Descargar álbum'),
                     ],
                   ),
                 ),
@@ -123,7 +123,7 @@ class AlbumScreen extends ConsumerWidget {
               ),
             ),
             if (canciones.isEmpty)
-              const EstadoVacio(mensaje: 'Este album no tiene canciones.')
+              const EstadoVacio(mensaje: 'Este álbum no tiene canciones.')
             else
               for (var i = 0; i < canciones.length; i++)
                 FilaCancion(
@@ -145,7 +145,7 @@ class AlbumScreen extends ConsumerWidget {
   }
 
   String _subtitulo(int cantidad) {
-    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
     return album.anio == null ? temas : '${album.anio} · $temas';
   }
 }

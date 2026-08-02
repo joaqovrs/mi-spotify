@@ -35,7 +35,7 @@ class PlaylistScreen extends ConsumerWidget {
         title: Text(actual.nombre),
         actions: [
           PopupMenuButton<void>(
-            tooltip: 'Mas opciones',
+            tooltip: 'Más opciones',
             itemBuilder: (_) => [
               PopupMenuItem<void>(
                 onTap: () => _renombrar(context, ref, actual),
@@ -54,7 +54,7 @@ class PlaylistScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.queue_music_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Agregar todo a la cola'),
+                      Text('Reproducir todo a continuación'),
                     ],
                   ),
                 ),
@@ -215,7 +215,7 @@ class _Contenido extends ConsumerWidget {
                 if (canciones.length > 1) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'Mantene presionada una cancion para cambiarla de lugar.',
+                    'Mantén presionada una canción para cambiarla de lugar.',
                     textAlign: TextAlign.center,
                     style: textos.bodySmall,
                   ),
@@ -228,7 +228,7 @@ class _Contenido extends ConsumerWidget {
           const SliverToBoxAdapter(
             child: EstadoVacio(
               mensaje:
-                  'Esta playlist esta vacia. Guarda canciones desde el menu '
+                  'Esta playlist está vacía. Guarda canciones desde el menú '
                   '"···" de cualquier tema.',
               icono: Icons.queue_music_rounded,
             ),
@@ -278,7 +278,7 @@ class _Contenido extends ConsumerWidget {
 
   String _resumen() {
     final cantidad = canciones.length;
-    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
 
     var total = 0;
     for (final c in canciones) {
@@ -319,7 +319,7 @@ class _Contenido extends ConsumerWidget {
     } on SubsonicException catch (e) {
       avisar(mensajero, e.mensaje);
     } catch (_) {
-      avisar(mensajero, 'No se pudo quitar la cancion.');
+      avisar(mensajero, 'No se pudo quitar la canción.');
     }
   }
 }

@@ -134,8 +134,13 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
   /// Suma canciones al final de la cola sin cortar lo que esta sonando.
   ///
+  /// Es lo que necesita la sincronizacion con la playlist que suena: agregar
+  /// un tema a la lista tiene que dejarlo tambien al final de la cola, para que
+  /// las dos sigan siendo el mismo orden. Para el boton de la interfaz esta
+  /// [agregarComoSiguiente], que es lo que espera quien lo toca.
+  ///
   /// Con la cola vacia no tendria sentido "agregar" a la nada: en ese caso
-  /// arranca la reproduccion, que es lo que espera quien toca el boton.
+  /// arranca la reproduccion.
   Future<void> agregarACola(List<MediaItem> canciones) async {
     if (canciones.isEmpty) return;
 
@@ -148,10 +153,46 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await _player.addAudioSources(canciones.map(_fuenteDe).toList());
   }
 
+  /// Mete canciones justo despues de la que esta sonando.
+  ///
+  /// Al final de la cola no sirve de nada: con un album de quince temas
+  /// encolar algo significaba esperar una hora para escucharlo. Lo que se
+  /// espera de este boton es "esto va despues de lo que suena, y despues sigue
+  /// todo como estaba", asi que se inserta en el medio y el resto del album
+  /// conserva su orden detras.
+  Future<void> agregarComoSiguiente(List<MediaItem> canciones) async {
+    if (canciones.isEmpty) return;
+
+    final lista = queue.value;
+    final actual = _player.currentIndex;
+
+    // Sin nada sonando no hay un "despues de esto": se cae al final, que con la
+    // cola vacia significa arrancar la reproduccion.
+    if (lista.isEmpty || actual == null || actual >= lista.length) {
+      await agregarACola(canciones);
+      return;
+    }
+
+    final destino = actual + 1;
+
+    final nueva = [...lista]..insertAll(destino, canciones);
+    queue.add(nueva);
+
+    // La cola dejo de ser un calco de la lista de la que salio: de aqui en
+    // adelante sus indices no coinciden con los de la playlist, y aplicarle una
+    // edicion de esa pantalla moveria la cancion equivocada.
+    _origenCola = null;
+
+    await _player.insertAudioSources(
+      destino,
+      canciones.map(_fuenteDe).toList(),
+    );
+  }
+
   AudioSource _fuenteDe(MediaItem item) {
     final url = item.extras?['url'] as String?;
     if (url == null) {
-      throw StateError('La cancion ${item.id} no trae URL de streaming.');
+      throw StateError('La canción ${item.id} no trae URL de streaming.');
     }
     return AudioSource.uri(Uri.parse(url), tag: item);
   }
