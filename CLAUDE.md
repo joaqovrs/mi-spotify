@@ -93,14 +93,16 @@ en la propia Debian. Ver Fase 5.
 ### Pendientes anotados
 | Pendiente | Detalle |
 |---|---|
-| **PR de descargas offline** | Rama `feat/descargas-offline` **pusheada pero sin mergear** (commit `bc177fc`). El PR no se creo porque `gh` no esta instalado en el Windows: hay que abrirlo a mano. |
-| **Resto de la musica** | Subir por WinSCP a `/srv/musica`, estructura `Artista/Album/`. |
+| ~~PR de descargas offline~~ | ✅ Mergeado el 02-08-2026 en el **PR #17**, junto con toda la tanda. La rama `feat/descargas-offline` ya no existe. |
+| **Resto de la musica** | Subir por WinSCP a `/srv/musica`, estructura `Artista/Album/`. Antes de subir una recopilacion armada a mano, pasarle `scripts/unificar-album.ps1` o Navidrome la va a partir en varios albumes. |
+| **Reetiquetar «Chris Cornell Covers»** | La carpeta ya subida a `/srv/musica` tiene los tags viejos: 12 albumes distintos y `album_artist` vacio. Hay que correr `scripts/unificar-album.bat` sobre `C:\dev\musica\Chris Cornell Covers`, **resubirla por WinSCP sobrescribiendo** y rescanear en Navidrome. |
 | ~~Direccion remota en la app~~ | ✅ Resuelto el 31-07-2026: las direcciones dejaron de ser campos del login y viven en `core/config.dart`. Quien tenia guardada la del tailnet queda arreglado al actualizar el APK. |
 | **Cable de red** | La laptop esta por WiFi (`wlp1s0`); ethernet seria mas estable para 24/7. |
 | **Token de DuckDNS expuesto** | El token quedo a la vista en una captura. El usuario decidio **no regenerarlo** (30-07-2026). Si algun dia se recrea, hay que actualizar `~/duckdns/duck.sh`. |
-| **Instalar el APK del 01-08-2026** | En el telefono, en `/sdcard/Download/mi-music.apk` (tamaño verificado). Trae la fila de reproduccion como hoja, el pie al azar, encolar a continuacion, el corazon en el mini reproductor, el album en *Reproduciendo*, quitar favoritos desde la biblioteca, el icono de Biblioteca y el logo nuevo. **Se instala encima, sin desinstalar:** se comprobo que la version puesta en el telefono ya esta firmada con la clave propia (mismo SHA-256, `16884d0d…`), asi que Android la acepta como actualizacion y **no** se pierden sesion ni descargas. |
-| **Probar el arrastre dentro de la hoja** | Sin verificar. La fila de reproduccion paso de pantalla completa a `showModalBottomSheet`, y ahi el `SliverReorderableList` comparte el scroll con la hoja: el gesto de arrastrar una cancion puede pelearse con el de cerrar la hoja tirando hacia abajo. Si al arrastrar se cierra en vez de mover, hay que separar los gestos. |
-| **Todo el trabajo del 01-08-2026 sin commitear** | 15 archivos modificados y 2 nuevos (`ui/cola_sheet.dart`, `test/marca_test.dart`) en el arbol de trabajo de `docs/fase-5-puertos-abiertos`, **sin un solo commit**. Decision del usuario: sigue agregando cosas antes de cerrar la tanda. Nada de esto esta respaldado en el remoto. |
+| ~~Instalar el APK del 01-08-2026~~ | ✅ Instalado y probado. **Se instala encima, sin desinstalar:** desde que la clave de firma es la propia, el SHA-256 del certificado coincide (`16884d0d…`) y Android lo acepta como actualizacion, sin perder sesion ni descargas. Comprobarlo antes de avisar: ver la seccion de firma. |
+| ~~Arrastre dentro de la hoja~~ | ✅ Probado el 02-08-2026: **funciona**. Era la duda de si el `SliverReorderableList` se pelearia con el gesto de cerrar la hoja tirando hacia abajo. No se pelean. |
+| ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
+| **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
 | **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
@@ -444,7 +446,9 @@ al boton de anterior sin nada a lo que volver.
   contra el largo, porque el estado puede llegar un instante desfasado de una cola recien cambiada.
 - **El arrastre sale de un asa** (`ReorderableDragStartListener` sobre el icono) y no de la fila
   entera, asi tocar la fila sigue saltando a esa cancion sin pelearse con el gesto. Es distinto de
-  la playlist, donde el arrastre es por presion sostenida sobre la fila completa.
+  la playlist, donde el arrastre es por presion sostenida sobre la fila completa. ✅ Probado el
+  02-08-2026: dentro de la hoja **funciona**, no se pelea con el gesto de cerrarla tirando hacia
+  abajo. Era la duda que quedaba de este cambio.
 - **Sin duracion en las filas de la cola**, a pedido: ahi importa el orden, no cuanto dura cada tema.
   Las sugerencias de abajo si la muestran, porque son `FilaCancion` normales.
 - Reordenar aqui **no toca la playlist de origen**, solo la cola — al reves de lo que hace editar
