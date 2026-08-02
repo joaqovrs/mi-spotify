@@ -34,8 +34,8 @@ class DescargasTab extends ConsumerWidget {
             padding: EdgeInsets.only(top: 40),
             child: EstadoVacio(
               mensaje:
-                  'Nada descargado todavia. Usa "Descargar" en el menu «···» '
-                  'de una cancion, o en el de un album o playlist entera.',
+                  'Nada descargado todavía. Usa "Descargar" en el menú «···» '
+                  'de una canción, o en el de un álbum o playlist entera.',
               icono: Icons.download_rounded,
             ),
           )
@@ -64,7 +64,7 @@ class _Encabezado extends ConsumerWidget {
     final textos = Theme.of(context).textTheme;
     final bytes = ref.watch(espacioDescargadoProvider);
 
-    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 12, 4),
@@ -91,7 +91,7 @@ class _Encabezado extends ConsumerWidget {
       context,
       titulo: 'Borrar descargas',
       mensaje:
-          'Se liberan del telefono. La musica sigue en el servidor y puedes '
+          'Se liberan del teléfono. La música sigue en el servidor y puedes '
           'volver a bajarla cuando quieras.',
       aceptar: 'Borrar todo',
     );

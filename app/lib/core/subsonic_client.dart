@@ -45,7 +45,7 @@ class SubsonicClient {
     required this.usuario,
     required this.password,
     Dio? dio,
-  }) : assert(urls.isNotEmpty, 'Hace falta al menos una direccion'),
+  }) : assert(urls.isNotEmpty, 'Hace falta al menos una dirección'),
        urls = List.unmodifiable(urls),
        _dio =
            dio ??
@@ -203,7 +203,7 @@ class SubsonicClient {
     final cuerpo = respuesta.data;
     if (cuerpo is! Map) {
       throw const SubsonicException(
-        'El servidor respondio algo inesperado. ¿Es realmente un servidor Navidrome?',
+        'El servidor respondió algo inesperado. ¿Es realmente un servidor Navidrome?',
         codigo: -1,
       );
     }
@@ -211,7 +211,7 @@ class SubsonicClient {
     final datos = cuerpo['subsonic-response'];
     if (datos is! Map) {
       throw const SubsonicException(
-        'La respuesta no tiene formato Subsonic. Revisa la direccion del servidor.',
+        'La respuesta no tiene formato Subsonic. Revisa la dirección del servidor.',
         codigo: -1,
       );
     }
@@ -223,7 +223,7 @@ class SubsonicClient {
       throw SubsonicException(
         codigo == 40
             ? 'Usuario o contraseña incorrectos.'
-            : (mensaje ?? 'El servidor rechazo la peticion.'),
+            : (mensaje ?? 'El servidor rechazó la petición.'),
         codigo: codigo ?? -1,
       );
     }
@@ -236,16 +236,16 @@ class SubsonicClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return 'El servidor no respondio a tiempo. Revisa que la laptop este '
+        return 'El servidor no respondió a tiempo. Revisa que la laptop esté '
             'encendida y con internet.';
       case DioExceptionType.connectionError:
-        return 'No se pudo conectar al servidor. Revisa la direccion y que la '
-            'laptop este encendida.';
+        return 'No se pudo conectar al servidor. Revisa la dirección y que la '
+            'laptop esté encendida.';
       case DioExceptionType.badResponse:
-        return 'El servidor respondio con un error '
-            '(${e.response?.statusCode ?? 'sin codigo'}).';
+        return 'El servidor respondió con un error '
+            '(${e.response?.statusCode ?? 'sin código'}).';
       default:
-        return 'Fallo de conexion con el servidor.';
+        return 'Fallo de conexión con el servidor.';
     }
   }
 
@@ -470,7 +470,7 @@ class SubsonicClient {
     final coincidencias = todas.where((p) => p.nombre == nombre);
     if (coincidencias.isEmpty) {
       throw const SubsonicException(
-        'La playlist se creo pero el servidor no devolvio su identificador.',
+        'La playlist se creó pero el servidor no devolvió su identificador.',
         codigo: -1,
       );
     }

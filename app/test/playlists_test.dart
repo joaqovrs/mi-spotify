@@ -45,7 +45,7 @@ void main() {
         'duration': 200,
       });
 
-      expect(playlist.resumen, '1 cancion · 3 min');
+      expect(playlist.resumen, '1 canción · 3 min');
     });
 
     test('copiarCon solo cambia el nombre', () {

@@ -50,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) setState(() => _error = e.mensaje);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Ocurrio un error inesperado al conectar.');
+        setState(() => _error = 'Ocurrió un error inesperado al conectar.');
       }
     } finally {
       if (mounted) setState(() => _cargando = false);
@@ -93,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text('Mi Music', style: textos.displaySmall),
                     const SizedBox(height: 6),
                     Text(
-                      'Entra con tu cuenta para escuchar tu musica.',
+                      'Entra con tu cuenta para escuchar tu música.',
                       style: textos.bodySmall,
                     ),
                     const SizedBox(height: 32),
@@ -113,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _entrar(),
                       decoration: InputDecoration(
-                        labelText: 'Contrasena',
+                        labelText: 'Contraseña',
                         suffixIcon: IconButton(
                           icon: Icon(
                             _verPassword
@@ -125,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       validator: (v) => (v == null || v.isEmpty)
-                          ? 'Escribe tu contrasena'
+                          ? 'Escribe tu contraseña'
                           : null,
                     ),
                     if (_error != null) ...[
