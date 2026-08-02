@@ -165,14 +165,23 @@ class FilaCancion extends ConsumerWidget {
                   color: acento,
                 ),
               ),
-            if (sonando)
-              Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
-            else
-              Text(cancion.duracionFormateada, style: textos.bodySmall),
+            // Ancho fijo y pegado a la derecha. Poppins no es monoespaciada,
+            // asi que "0:19" mide menos que "4:02" y, sin esto, el icono de
+            // descargado que va antes queda unos pixeles corrido en cada fila.
+            // Alcanza para "1:02:33", que es el formato mas largo que se arma.
+            SizedBox(
+              width: 52,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: sonando
+                    ? Icon(Icons.graphic_eq_rounded, size: 20, color: acento)
+                    : Text(cancion.duracionFormateada, style: textos.bodySmall),
+              ),
+            ),
             if (_tieneMenu)
               PopupMenuButton<void>(
                 icon: const Icon(Icons.more_horiz_rounded),
-                tooltip: 'Mas opciones',
+                tooltip: 'Más opciones',
                 // El menu se cierra antes de correr el `onTap`, asi que las
                 // acciones usan el contexto de la fila y no el del menu, que
                 // para entonces ya no existe.
@@ -210,7 +219,7 @@ class FilaCancion extends ConsumerWidget {
                           children: [
                             Icon(Icons.queue_music_rounded, size: 20),
                             SizedBox(width: 12),
-                            Text('Agregar a la cola'),
+                            Text('Reproducir a continuación'),
                           ],
                         ),
                       ),
@@ -243,7 +252,7 @@ class FilaCancion extends ConsumerWidget {
                           children: [
                             Icon(Icons.delete_outline_rounded, size: 20),
                             SizedBox(width: 12),
-                            Text('Borrar del telefono'),
+                            Text('Borrar del teléfono'),
                           ],
                         ),
                       )
@@ -290,7 +299,7 @@ class FilaCancion extends ConsumerWidget {
             Icon(Icons.queue_music_rounded, color: acento),
             const SizedBox(width: 10),
             Text(
-              'A la cola',
+              'A continuación',
               style: textos.labelLarge?.copyWith(color: acento),
             ),
           ],
@@ -362,7 +371,7 @@ class FilaArtista extends StatelessWidget {
                   if (albumes != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      albumes == 1 ? '1 album' : '$albumes albumes',
+                      albumes == 1 ? '1 álbum' : '$albumes álbumes',
                       style: textos.bodySmall,
                     ),
                   ],
