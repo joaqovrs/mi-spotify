@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Declara la app como app de medios ante Android Auto. Sin esto, Auto ni
+     siquiera la ofrece como reproductor, aunque el MediaBrowserService ya
+     este funcionando (lo trae audio_service en el <service> del manifest). -->
+<automotiveApp>
+    <uses name="media"/>
+</automotiveApp>

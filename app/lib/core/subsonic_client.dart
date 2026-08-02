@@ -380,6 +380,25 @@ class SubsonicClient {
     ];
   }
 
+  /// Una cancion suelta por id.
+  ///
+  /// Solo hace falta como red de contencion para Android Auto: si el proceso
+  /// se reinicio y el auto pide reproducir un id sin haber navegado antes en
+  /// esta corrida, no hay ninguna carpeta en cache donde buscarlo. `null` si
+  /// el servidor no la tiene (o no responde) — se tolera igual que
+  /// [_bajarPortada], porque no reproducir una cancion nunca es peor que
+  /// tirar abajo toda la conexion con Android Auto por un error de red.
+  Future<Cancion?> buscarCancion(String id) async {
+    try {
+      final datos = await _get('getSong', {'id': id});
+      final song = datos['song'];
+      if (song is! Map) return null;
+      return Cancion.desdeJson(Map<String, dynamic>.from(song));
+    } on SubsonicException {
+      return null;
+    }
+  }
+
   /// Canciones de un album, en el orden del disco.
   Future<List<Cancion>> cancionesDeAlbum(String albumId) async {
     final datos = await _get('getAlbum', {'id': albumId});

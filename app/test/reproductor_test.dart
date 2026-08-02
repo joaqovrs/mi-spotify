@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mi_spotify/core/subsonic_client.dart';
 import 'package:mi_spotify/models/biblioteca.dart';
+import 'package:mi_spotify/models/descarga.dart';
 import 'package:mi_spotify/state/reproductor_providers.dart';
 
 void main() {
@@ -68,6 +69,26 @@ void main() {
       );
 
       expect(portadaDe(item), 'portada-distinta');
+    });
+
+    test('con descarga no toca el cliente, ni siquiera si es null', () {
+      // La carpeta de Descargas de Android Auto arma estos MediaItem sin
+      // sesion iniciada: si tocara el cliente en esta rama, explotaria.
+      final descarga = Descarga(
+        cancion: Cancion.desdeJson({
+          'id': 'c-5',
+          'title': 'Guardada',
+          'coverArt': 'al-5',
+        }),
+        archivo: '/datos/descargas/c-5.mp3',
+        portada: '/datos/descargas/portada-al-5.jpg',
+        bytes: 1000,
+      );
+
+      final item = aMediaItem(descarga.cancion, null, descarga: descarga);
+
+      expect(item.extras!['url'], contains('c-5.mp3'));
+      expect(item.artUri, Uri.file('/datos/descargas/portada-al-5.jpg'));
     });
   });
 

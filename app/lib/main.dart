@@ -56,6 +56,18 @@ class _Puerta extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Android Auto navega Playlists/Albumes/Artistas a traves del handler, no
+    // de esta UI, asi que necesita su propio SubsonicClient. Se lo empuja aca
+    // en vez de que el handler lea el Keystore por su cuenta, para que use
+    // siempre la misma sesion (y la misma doble direccion local/remota) que
+    // el resto de la app.
+    ref.listen(sesionProvider, (_, estado) {
+      ref.read(reproductorProvider).cliente = switch (estado) {
+        SesionAbierta(cliente: final cliente) => cliente,
+        _ => null,
+      };
+    });
+
     return switch (ref.watch(sesionProvider)) {
       SesionCargando() => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
