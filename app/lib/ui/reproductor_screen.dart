@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../state/favoritos_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'acciones.dart';
+import 'cola_sheet.dart';
 import 'widgets/boton_favorito.dart';
 import 'widgets/portada.dart';
 
@@ -35,8 +36,13 @@ class ReproductorScreen extends ConsumerWidget {
         ),
         title: const Text('Reproduciendo'),
         actions: [
+          IconButton(
+            tooltip: 'Fila de reproducción',
+            onPressed: () => mostrarFilaDeReproduccion(context),
+            icon: const Icon(Icons.queue_music_rounded),
+          ),
           PopupMenuButton<void>(
-            tooltip: 'Mas opciones',
+            tooltip: 'Más opciones',
             itemBuilder: (_) => [
               PopupMenuItem<void>(
                 onTap: () =>
@@ -59,6 +65,22 @@ class ReproductorScreen extends ConsumerWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
+              // El album va arriba de la caratula y no abajo con el artista:
+              // es el contexto de lo que suena, igual que el "reproduciendo
+              // desde" de otras apps.
+              if (cancion.album != null) ...[
+                Text(
+                  cancion.album!,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textos.labelLarge?.copyWith(
+                    color: textos.bodySmall?.color,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               Portada(
                 coverArt: portadaDe(cancion),
                 lado: ladoPortada,
