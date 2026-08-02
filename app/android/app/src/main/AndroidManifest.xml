@@ -36,6 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Declara la app como app de medios ante Android Auto (res/xml/automotive_app_desc.xml). -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc"/>
+
         <!-- Servicio de audio_service: mantiene la reproducción viva fuera de
              la app y dibuja la notificación con los controles. -->
         <service

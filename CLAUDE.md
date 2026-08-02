@@ -104,6 +104,7 @@ en la propia Debian. Ver Fase 5.
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
+| ~~Probar Android Auto~~ | ✅ Probado el 02-08-2026 en un auto real (no hizo falta el Desktop Head Unit): las cuatro carpetas aparecen y la reproduccion anda. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
 | **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
 | **Paso 8 del CI/CD** | Ya desbloqueado: falta el workflow que publique el APK firmado en GitHub Releases al taguear, con el keystore como secret del repo. |
@@ -603,6 +604,8 @@ app/lib/
   models/biblioteca.dart             Album, Cancion, Artista, Playlist, Favoritos
   models/descarga.dart               cancion guardada en el telefono
   services/reproductor_handler.dart  motor de audio (just_audio + audio_service)
+  services/arbol_multimedia.dart     arbol de Android Auto: ids e items, Dart puro
+  core/media_items.dart              MediaItem <-> Cancion (aMediaItem, portadaDe, cancionDe)
   state/sesion_providers.dart        estado de sesion (Riverpod)
   state/tema_providers.dart          preferencia de tema
   state/biblioteca_providers.dart    inicio, busqueda, albumes y artistas
@@ -620,6 +623,57 @@ app/lib/
   ui/acciones_descarga.dart          descargar y borrar del telefono
   ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
 ```
+
+**Android Auto (02-08-2026).** `audio_service` ya implementaba el `MediaBrowserService` de Android
+(el `<service>` del manifest con el intent-filter `android.media.browse.MediaBrowserService` viene
+desde la etapa 3), asi que la mitad estaba hecha sin saberlo. Faltaban dos cosas: declarar la app
+como app de medios ante Android Auto
+(`android/app/src/main/res/xml/automotive_app_desc.xml` + el `<meta-data
+com.google.android.gms.car.application>` en el manifest, sin dependencias de Gradle nuevas) y
+darle al `ReproductorHandler` un arbol navegable (`getChildren`) con las cuatro secciones de la
+Biblioteca: Playlists, Albumes, Artistas y Descargas.
+
+- **El handler recibe el `SubsonicClient` desde afuera, no lo crea el.** Se crea en `main()`
+  **antes** de que exista sesion (las credenciales se leen despues, dentro del arbol de Riverpod),
+  y hasta esta etapa nunca habia necesitado hablar con Subsonic por su cuenta — las pantallas le
+  pasaban `MediaItem` ya armados. Ahora tiene un setter `cliente`, y `_Puerta` en `main.dart` (que
+  ya mira `sesionProvider`) se lo empuja con `ref.listen` cada vez que hay login o logout. Asi el
+  handler nunca duplica la logica de leer el Keystore ni la doble direccion local/remota: usa
+  siempre el mismo cliente que el resto de la app.
+- **Sin sesion, Descargas sigue andando.** Playlists/Albumes/Artistas quedan vacios sin `cliente`,
+  pero la carpeta de Descargas lee directo de `DescargasStorage`, igual que la pestaña de Descargas
+  del telefono — es el mismo motivo por el que esa pestaña funciona con el servidor apagado.
+- **Arbol de ids con prefijo** (`playlist:<id>`, `album:<id>`, `artista:<id>`), en
+  `services/arbol_multimedia.dart`, Dart puro sin `SubsonicClient` ni Riverpod — para poder
+  testearlo sin instanciar el reproductor real, que trae un `AudioPlayer()` de verdad y no anda en
+  `flutter test`. `artista:<id>` devuelve carpetas `album:<id>`, el mismo nodo que usan los albumes
+  de la raiz: "albumes de un artista" no duplica codigo. Las canciones usan siempre el id crudo de
+  Subsonic, sin prefijo — son unicos entre tipos (ver el comentario de `Favoritos.ids` en
+  `models/biblioteca.dart`), asi que nunca hay ambiguedad al resolver un id de vuelta a una cancion.
+- **`aMediaItem` se mudo** de `state/reproductor_providers.dart` a `core/media_items.dart` (junto
+  con `portadaDe`, `cancionDe`, `origenDePlaylist`), para que el handler la use sin importar la capa
+  de Riverpod. `reproductor_providers.dart` reexporta el archivo nuevo, asi que ninguna pantalla
+  cambio un import. Su parametro `cliente` paso a ser `SubsonicClient?`: cuando hay `Descarga`, la
+  funcion nunca lo toca (ni para la portada ni para la URL), asi que sigue siendo seguro pasarle
+  `null` al armar la carpeta de Descargas sin sesion.
+- **`playFromMediaId` resuelve contra una cache de las ultimas carpetas mostradas**
+  (`Map<String, List<MediaItem>>`, por `parentMediaId`). Asi tocar una cancion del medio de un
+  album arma la cola con el album entero, no una cancion suelta — busca en que lista cacheada
+  aparece el id y arranca `reproducirLista` ahi. Si la cache esta fria (el proceso se reinicio y el
+  auto retoma sin haber navegado antes en esta corrida) hay dos redes de contencion: primero lo
+  descargado, que no necesita servidor, y recien despues un `getSong` nuevo en `SubsonicClient`
+  para pedir la cancion suelta.
+- **La cache se limpia al reasignar `cliente`.** La app es multiusuario (ver "Multiusuario" mas
+  abajo); sin este detalle, cerrar sesion y entrar con otra cuenta dejaria en el auto carpetas de
+  la cuenta anterior.
+- Tocar una cancion salida de una carpeta `playlist:<id>` le pone a la cola el mismo `origenCola`
+  que usa el resto de la app (`origenDePlaylist`), asi que reordenar esa playlist desde el telefono
+  mientras suena en el auto sigue moviendo lo que esta sonando — igual que ya pasaba entre la
+  pantalla de playlist y la cola.
+- ✅ **Probado el 02-08-2026 en un auto real**, sin pasar por el Desktop Head Unit. Hizo falta
+  activar *Fuentes desconocidas* en Ajustes de desarrollador de la app Android Auto del telefono
+  (ver mas abajo): sin eso, Auto ni siquiera ofrece la app como reproductor por venir sideloaded y
+  no de Play Store.
 
 ### Fase 5 — Acceso remoto por puertos abiertos ✅ COMPLETA (30-07-2026)
 

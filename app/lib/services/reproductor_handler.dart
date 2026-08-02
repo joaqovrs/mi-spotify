@@ -1,6 +1,12 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../core/descargas_storage.dart';
+import '../core/media_items.dart';
+import '../core/subsonic_client.dart';
+import '../models/biblioteca.dart';
+import 'arbol_multimedia.dart';
+
 /// Motor de reproduccion.
 ///
 /// `audio_service` corre esto dentro de un servicio en primer plano de Android,
@@ -8,7 +14,12 @@ import 'package:just_audio/just_audio.dart';
 /// aparezcan los controles en la notificacion y en la pantalla de bloqueo.
 ///
 /// La URL de streaming de cada cancion viaja en `extras['url']` del [MediaItem],
-/// asi el handler no necesita conocer el cliente de Subsonic ni las credenciales.
+/// asi el handler no necesita conocer el cliente de Subsonic ni las credenciales
+/// **para reproducir**. Para el arbol de Android Auto (`getChildren`) si hace
+/// falta un [SubsonicClient]: lo inyecta `main.dart` con el setter [cliente]
+/// cada vez que cambia la sesion, en vez de que el handler lea el Keystore por
+/// su cuenta — asi usa siempre la misma doble direccion local/remota que el
+/// resto de la app, sin duplicar esa logica.
 class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   ReproductorHandler() {
     _player.playbackEventStream.listen(
@@ -35,6 +46,31 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   }
 
   final AudioPlayer _player = AudioPlayer();
+  final DescargasStorage _descargasStorage = const DescargasStorage();
+
+  SubsonicClient? _cliente;
+
+  /// Ultimas carpetas de canciones que le mostro a Android Auto, por
+  /// `parentMediaId`. Es lo que le permite a [playFromMediaId] reconstruir la
+  /// cola entera (no solo la cancion tocada) cuando el auto pide reproducir
+  /// algo que ya se navego en esta corrida del proceso.
+  final Map<String, List<MediaItem>> _hojasCache = {};
+
+  /// De que playlist salio cada carpeta cacheada, para las mismas que
+  /// [origenCola] usa en el resto de la app. Solo las carpetas de playlist
+  /// tienen entrada aca — las de album o descargas quedan sin sincronizar
+  /// porque no son editables desde la pantalla de una lista.
+  final Map<String, String> _origenPorHoja = {};
+
+  /// El [SubsonicClient] con el que Android Auto arma Playlists, Albumes y
+  /// Artistas. Se limpia la cache de carpetas al asignarlo: la app es
+  /// multiusuario, y sin esto cerrar sesion y entrar con otra cuenta dejaria
+  /// en el auto carpetas de la cuenta anterior.
+  set cliente(SubsonicClient? valor) {
+    _cliente = valor;
+    _hojasCache.clear();
+    _origenPorHoja.clear();
+  }
 
   String? _origenCola;
 
@@ -264,5 +300,140 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> stop() async {
     await _player.stop();
     await super.stop();
+  }
+
+  // ------------------------------------------------------------ Android Auto
+
+  /// El arbol que navega Android Auto (y cualquier otro `MediaBrowser`, como
+  /// Wear OS). Playlists, Albumes y Artistas necesitan [_cliente]; sin sesion
+  /// quedan vacios pero Descargas sigue andando, porque lee directo del
+  /// telefono igual que la pestaña de Descargas de la app.
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
+    final cliente = _cliente;
+    final nodo = interpretarNodo(parentMediaId);
+
+    return switch (nodo) {
+      NodoRaiz() => nodosRaiz(),
+      NodoListaPlaylists() => cliente == null
+          ? const []
+          : [
+              for (final p in await cliente.playlists())
+                nodoPlaylist(p, portada: _portada(cliente, p.coverArt)),
+            ],
+      NodoListaAlbumes() => cliente == null
+          ? const []
+          : [
+              for (final a in await cliente.albumes(
+                tipo: 'alphabeticalByName',
+                cantidad: 500,
+              ))
+                nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
+            ],
+      NodoListaArtistas() => cliente == null
+          ? const []
+          : [
+              for (final a in await cliente.artistas())
+                nodoArtista(a, portada: _portada(cliente, a.coverArt)),
+            ],
+      NodoDescargas() => _hojaDescargas(),
+      NodoPlaylist(id: final id) => cliente == null
+          ? const []
+          : _hojaCanciones(
+              parentMediaId,
+              await cliente.cancionesDePlaylist(id),
+              cliente,
+              origen: origenDePlaylist(id),
+            ),
+      NodoAlbum(id: final id) => cliente == null
+          ? const []
+          : _hojaCanciones(
+              parentMediaId,
+              await cliente.cancionesDeAlbum(id),
+              cliente,
+            ),
+      NodoArtista(id: final id) => cliente == null
+          ? const []
+          : [
+              for (final a in await cliente.albumesDeArtista(id))
+                nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
+            ],
+      NodoDesconocido() => const [],
+    };
+  }
+
+  Uri? _portada(SubsonicClient cliente, String? coverArt) =>
+      coverArt == null ? null : cliente.urlPortada(coverArt, tamano: 256);
+
+  /// Arma y cachea una carpeta de canciones reproducibles.
+  List<MediaItem> _hojaCanciones(
+    String parentMediaId,
+    List<Cancion> canciones,
+    SubsonicClient cliente, {
+    String? origen,
+  }) {
+    final lista = [for (final c in canciones) aMediaItem(c, cliente)];
+    _hojasCache[parentMediaId] = lista;
+    if (origen != null) _origenPorHoja[parentMediaId] = origen;
+    return lista;
+  }
+
+  Future<List<MediaItem>> _hojaDescargas() async {
+    final descargas = await _descargasStorage.leer();
+    final lista = [
+      for (final d in descargas) aMediaItem(d.cancion, _cliente, descarga: d),
+    ];
+    _hojasCache[idRaizDescargas] = lista;
+    return lista;
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) async {
+    for (final lista in _hojasCache.values) {
+      for (final item in lista) {
+        if (item.id == mediaId) return item;
+      }
+    }
+    return null;
+  }
+
+  /// Lo que llama Android Auto al tocar una cancion del arbol.
+  ///
+  /// Busca primero en las carpetas ya mostradas en esta corrida, para armar
+  /// la cola con toda la lista (el resto del album o de la playlist), no solo
+  /// la cancion tocada. Si la cache esta fria — el proceso se reinicio y el
+  /// auto retoma sin haber navegado antes — hay dos redes de contencion:
+  /// primero lo descargado (no necesita servidor), y recien despues un pedido
+  /// suelto al servidor.
+  @override
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) async {
+    for (final entrada in _hojasCache.entries) {
+      final indice = entrada.value.indexWhere((m) => m.id == mediaId);
+      if (indice == -1) continue;
+
+      await reproducirLista(
+        entrada.value,
+        indice,
+        origen: _origenPorHoja[entrada.key],
+      );
+      return;
+    }
+
+    final descargas = await _descargasStorage.leer();
+    for (final d in descargas) {
+      if (d.cancion.id != mediaId) continue;
+      await reproducirLista([aMediaItem(d.cancion, _cliente, descarga: d)], 0);
+      return;
+    }
+
+    final cliente = _cliente;
+    if (cliente == null) return;
+
+    final cancion = await cliente.buscarCancion(mediaId);
+    if (cancion == null) return;
+    await reproducirLista([aMediaItem(cancion, cliente)], 0);
   }
 }
