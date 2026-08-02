@@ -19,7 +19,7 @@ Future<void> main() async {
     builder: ReproductorHandler.new,
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.joaqovrs.mi_spotify.audio',
-      androidNotificationChannelName: 'Reproduccion',
+      androidNotificationChannelName: 'Reproducción',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
     ),

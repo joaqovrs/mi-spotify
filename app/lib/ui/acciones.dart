@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
+import '../state/favoritos_providers.dart';
 import '../state/playlists_providers.dart';
 import '../state/reproductor_providers.dart';
 import 'avisos.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
-/// Encola canciones y confirma con un aviso.
+/// Encola canciones a continuacion de la que suena y confirma con un aviso.
 ///
-/// El aviso importa: agregar al final de una cola larga no produce ningun
-/// cambio visible, asi que sin confirmacion parece que el boton no hizo nada.
+/// El aviso importa: la cola no esta a la vista, asi que sin confirmacion
+/// parece que el boton no hizo nada. Y dice *a continuacion* porque es
+/// justamente lo que no se puede ver.
 Future<void> encolar(
   BuildContext context,
   WidgetRef ref,
@@ -21,17 +23,37 @@ Future<void> encolar(
   if (canciones.isEmpty) return;
 
   final arrancaAhora = ref.read(colaProvider).value?.isEmpty ?? true;
-  await agregarACola(ref, canciones);
+  await agregarComoSiguiente(ref, canciones);
 
   if (!context.mounted) return;
 
   final texto = switch ((arrancaAhora, canciones.length)) {
     (true, _) => 'Reproduciendo',
-    (false, 1) => 'Agregada a la cola',
-    (false, final n) => '$n canciones agregadas a la cola',
+    (false, 1) => 'Suena a continuación',
+    (false, final n) => '$n canciones a continuación',
   };
 
   avisar(ScaffoldMessenger.of(context), texto);
+}
+
+/// Marca o desmarca el corazon de una cancion contando lo que salio mal.
+///
+/// El notifier revierte solo y vuelve a lanzar el error; sin alguien que lo
+/// atrape queda como una excepcion suelta que no le dice nada a nadie.
+Future<void> alternarFavorito(
+  BuildContext context,
+  WidgetRef ref,
+  Cancion cancion,
+) async {
+  final mensajero = ScaffoldMessenger.of(context);
+
+  try {
+    await ref.read(favoritosProvider.notifier).alternarCancion(cancion);
+  } on SubsonicException catch (e) {
+    avisar(mensajero, e.mensaje);
+  } catch (_) {
+    avisar(mensajero, 'No se pudo guardar el favorito.');
+  }
 }
 
 // --------------------------------------------------------------- A playlists
@@ -105,7 +127,7 @@ Future<void> agregarAPlaylist(
 }
 
 String _cuantas(int cantidad) =>
-    cantidad == 1 ? 'Cancion guardada' : '$cantidad canciones guardadas';
+    cantidad == 1 ? 'Canción guardada' : '$cantidad canciones guardadas';
 
 class _HojaPlaylists extends ConsumerWidget {
   const _HojaPlaylists();
@@ -147,7 +169,7 @@ class _HojaPlaylists extends ConsumerWidget {
                 data: (playlists) {
                   if (playlists.isEmpty) {
                     return const EstadoVacio(
-                      mensaje: 'Todavia no tienes playlists. Crea la primera.',
+                      mensaje: 'Todavía no tienes playlists. Crea la primera.',
                       icono: Icons.queue_music_rounded,
                     );
                   }

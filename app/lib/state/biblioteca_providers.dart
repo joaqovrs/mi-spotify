@@ -50,6 +50,16 @@ final cancionesAlAzarProvider = FutureProvider<List<Cancion>>((ref) async {
   return ref.watch(clienteProvider).cancionesAlAzar(cantidad: 100);
 });
 
+/// Sugerencias al azar para el pie de la fila de reproduccion.
+///
+/// Va aparte de [cancionesAlAzarProvider] a proposito, aunque pidan lo mismo:
+/// ese alimenta la pestaña Canciones, y sortearlo de nuevo cada vez que se toca
+/// una sugerencia le cambiaria la lista al usuario en otra pantalla sin que
+/// hubiera pedido nada.
+final sugerenciasAlAzarProvider = FutureProvider<List<Cancion>>((ref) async {
+  return ref.watch(clienteProvider).cancionesAlAzar(cantidad: 20);
+});
+
 /// Texto que se esta buscando. Lo actualiza la pantalla de busqueda con un
 /// retardo, para no disparar una consulta por cada tecla.
 final consultaProvider = StateProvider<String>((ref) => '');

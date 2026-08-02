@@ -89,5 +89,5 @@ class SesionNotifier extends StateNotifier<SesionEstado> {
 final clienteProvider = Provider<SubsonicClient>((ref) {
   final estado = ref.watch(sesionProvider);
   if (estado is SesionAbierta) return estado.cliente;
-  throw StateError('Se pidio el cliente sin una sesion abierta.');
+  throw StateError('Se pidió el cliente sin una sesión abierta.');
 });

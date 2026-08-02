@@ -73,7 +73,7 @@ class _BuscarScreenState extends ConsumerState<BuscarScreen> {
                     autocorrect: false,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Canciones, albumes o artistas',
+                      hintText: 'Canciones, álbumes o artistas',
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _controlador.text.isEmpty
                           ? null
@@ -122,7 +122,7 @@ class _Resultados extends ConsumerWidget {
       data: (resultado) {
         if (resultado.estaVacio) {
           return const EstadoVacio(
-            mensaje: 'No encontre nada con ese nombre.',
+            mensaje: 'No encontré nada con ese nombre.',
             icono: Icons.search_off_rounded,
           );
         }
@@ -147,7 +147,7 @@ class _Resultados extends ConsumerWidget {
                 ),
             ],
             if (resultado.albumes.isNotEmpty) ...[
-              _Encabezado('Albumes', textos),
+              _Encabezado('Álbumes', textos),
               for (final album in resultado.albumes)
                 _FilaAlbum(album: album),
             ],

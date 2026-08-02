@@ -13,7 +13,7 @@ import 'sesion_providers.dart';
 
 /// El handler se crea una sola vez, en `main()`, y se inyecta aqui al arrancar.
 final reproductorProvider = Provider<ReproductorHandler>((ref) {
-  throw UnimplementedError('Se sobreescribe en main() con el handler real.');
+  throw UnimplementedError('Se sobrescribe en main() con el handler real.');
 });
 
 /// Cancion que suena en este momento. Null si nunca se reprodujo nada.
@@ -200,9 +200,18 @@ Future<void> alternarAleatorio(WidgetRef ref) {
       );
 }
 
-/// Suma canciones al final de la cola.
-Future<void> agregarACola(WidgetRef ref, List<Cancion> canciones) async {
-  await ref.read(reproductorProvider).agregarACola(_aMediaItems(ref, canciones));
+/// Mete canciones justo despues de la que suena.
+///
+/// El equivalente que agrega al final ([ReproductorHandler.agregarACola]) queda
+/// para la sincronizacion con la playlist que suena, donde el orden de la cola
+/// tiene que seguir siendo el de la lista.
+Future<void> agregarComoSiguiente(
+  WidgetRef ref,
+  List<Cancion> canciones,
+) async {
+  await ref
+      .read(reproductorProvider)
+      .agregarComoSiguiente(_aMediaItems(ref, canciones));
 }
 
 /// Formatea una duracion como `3:07` o `1:02:33`.

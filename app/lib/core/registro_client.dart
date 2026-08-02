@@ -53,7 +53,7 @@ class RegistroClient {
       );
     } on DioException {
       throw const RegistroException(
-        'No se pudo conectar con el servidor. Revisa tu conexion e '
+        'No se pudo conectar con el servidor. Revisa tu conexión e '
         'intenta de nuevo.',
       );
     }
@@ -63,7 +63,7 @@ class RegistroClient {
     final cuerpo = respuesta.data;
     final motivo = (cuerpo is Map && cuerpo['error'] is String)
         ? cuerpo['error'] as String
-        : 'No se pudo crear la cuenta (codigo ${respuesta.statusCode}).';
+        : 'No se pudo crear la cuenta (código ${respuesta.statusCode}).';
 
     throw RegistroException(motivo);
   }

@@ -29,7 +29,7 @@ class Album {
   factory Album.desdeJson(Map<String, dynamic> json) {
     return Album(
       id: '${json['id']}',
-      nombre: json['name'] as String? ?? json['album'] as String? ?? 'Sin titulo',
+      nombre: json['name'] as String? ?? json['album'] as String? ?? 'Sin título',
       artista: json['artist'] as String? ?? 'Artista desconocido',
       artistaId: json['artistId'] as String?,
       coverArt: json['coverArt'] as String?,
@@ -69,7 +69,7 @@ class Cancion {
   factory Cancion.desdeJson(Map<String, dynamic> json) {
     return Cancion(
       id: '${json['id']}',
-      titulo: json['title'] as String? ?? 'Sin titulo',
+      titulo: json['title'] as String? ?? 'Sin título',
       artista: json['artist'] as String? ?? 'Artista desconocido',
       album: json['album'] as String?,
       albumId: json['albumId'] as String?,
@@ -212,7 +212,7 @@ class Playlist {
   /// creada, todavia vacia) en vez de mostrar un `0 min` que confunde.
   String get resumen {
     final cantidad = cantidadCanciones ?? 0;
-    final temas = cantidad == 1 ? '1 cancion' : '$cantidad canciones';
+    final temas = cantidad == 1 ? '1 canción' : '$cantidad canciones';
 
     final total = duracion;
     if (total == null || total <= 0) return temas;

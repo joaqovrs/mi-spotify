@@ -52,7 +52,7 @@ class InicioScreen extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'Resumen'),
                   Tab(text: 'Canciones'),
-                  Tab(text: 'Albumes'),
+                  Tab(text: 'Álbumes'),
                   Tab(text: 'Artistas'),
                 ],
               ),
@@ -89,22 +89,22 @@ class _PestanaResumen extends ConsumerWidget {
           _Carrusel(
             titulo: 'Agregados recientemente',
             provider: albumesRecientesProvider,
-            vacio: 'Todavia no subiste musica al servidor.',
+            vacio: 'Todavía no subiste música al servidor.',
           ),
           _Carrusel(
-            titulo: 'Tus mas escuchados',
+            titulo: 'Tus más escuchados',
             provider: albumesFrecuentesProvider,
-            vacio: 'Cuando escuches musica, aqui aparecen tus favoritos.',
+            vacio: 'Cuando escuches música, aquí aparecen tus favoritos.',
           ),
           _Carrusel(
             titulo: 'Vuelve a escuchar',
             provider: albumesRecienEscuchadosProvider,
-            vacio: 'Aca va a quedar lo ultimo que sono.',
+            vacio: 'Acá va a quedar lo último que sonó.',
           ),
           _Carrusel(
             titulo: 'Al azar de tu biblioteca',
             provider: albumesAlAzarProvider,
-            vacio: 'Sin albumes para sortear todavia.',
+            vacio: 'Sin álbumes para sortear todavía.',
           ),
         ],
       ),
@@ -243,7 +243,7 @@ class _PestanaAlbumes extends ConsumerWidget {
           if (albumes.isEmpty) {
             return ListView(
               children: const [
-                EstadoVacio(mensaje: 'Todavia no hay albumes en el servidor.'),
+                EstadoVacio(mensaje: 'Todavía no hay álbumes en el servidor.'),
               ],
             );
           }
@@ -295,7 +295,7 @@ class _PestanaArtistas extends ConsumerWidget {
             return ListView(
               children: const [
                 EstadoVacio(
-                  mensaje: 'Todavia no hay artistas en el servidor.',
+                  mensaje: 'Todavía no hay artistas en el servidor.',
                   icono: Icons.person_outline_rounded,
                 ),
               ],

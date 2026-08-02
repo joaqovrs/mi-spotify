@@ -16,7 +16,7 @@ class EstadoError extends StatelessWidget {
 
     final mensaje = error is SubsonicException
         ? (error as SubsonicException).mensaje
-        : 'No se pudo cargar la musica.';
+        : 'No se pudo cargar la música.';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),

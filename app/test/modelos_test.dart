@@ -24,7 +24,7 @@ void main() {
     test('sobrevive a un album sin metadatos', () {
       final album = Album.desdeJson({'id': 'al-2'});
 
-      expect(album.nombre, 'Sin titulo');
+      expect(album.nombre, 'Sin título');
       expect(album.artista, 'Artista desconocido');
       expect(album.coverArt, isNull);
     });

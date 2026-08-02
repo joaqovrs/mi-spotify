@@ -59,7 +59,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
       if (mounted) setState(() => _error = e.mensaje);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Ocurrio un error inesperado al registrarte.');
+        setState(() => _error = 'Ocurrió un error inesperado al registrarte.');
       }
     } finally {
       if (mounted) setState(() => _cargando = false);
@@ -83,11 +83,11 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Center(child: LogoMarca(tamano: 64)),
+                    const LogoMarca(tamano: 64),
                     const SizedBox(height: 22),
                     Text(
-                      'Necesitas un codigo de invitacion. Pideselo a quien te '
-                      'paso la app.',
+                      'Necesitas un código de invitación. Pídeselo a quien te '
+                      'pasó la app.',
                       style: textos.bodySmall,
                       textAlign: TextAlign.center,
                     ),
@@ -108,7 +108,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                       obscureText: !_verPassword,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Contrasena',
+                        labelText: 'Contraseña',
                         suffixIcon: IconButton(
                           icon: Icon(
                             _verPassword
@@ -129,10 +129,10 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                       obscureText: !_verPassword,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Repetir contrasena',
+                        labelText: 'Repetir contraseña',
                       ),
                       validator: (v) => (v != _passwordCtrl.text)
-                          ? 'Las contrasenas no coinciden'
+                          ? 'Las contraseñas no coinciden'
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -142,10 +142,10 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _crear(),
                       decoration: const InputDecoration(
-                        labelText: 'Codigo de invitacion',
+                        labelText: 'Código de invitación',
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Escribe el codigo de invitacion'
+                          ? 'Escribe el código de invitación'
                           : null,
                     ),
                     if (_error != null) ...[
@@ -183,7 +183,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
     if (usuario.isEmpty) return 'Escribe un usuario';
     if (usuario.length < 3) return 'Usa al menos 3 caracteres';
     if (!RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(usuario)) {
-      return 'Solo letras, numeros, punto, guion y guion bajo';
+      return 'Solo letras, números, punto, guion y guion bajo';
     }
     return null;
   }

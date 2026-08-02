@@ -28,7 +28,7 @@ void descargar(
   notifier.descargar(canciones);
 
   avisar(ScaffoldMessenger.of(context), switch (nuevas) {
-    0 => 'Ya estaba en el telefono',
+    0 => 'Ya estaba en el teléfono',
     1 => 'Descargando…',
     final n => 'Descargando $n canciones…',
   });
@@ -43,5 +43,5 @@ Future<void> quitarDescarga(
   final mensajero = ScaffoldMessenger.of(context);
 
   await ref.read(descargasProvider.notifier).borrar(descarga);
-  avisar(mensajero, 'Borrada del telefono');
+  avisar(mensajero, 'Borrada del teléfono');
 }

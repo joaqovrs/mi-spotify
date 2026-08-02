@@ -58,8 +58,8 @@ class ArtistaScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       albumes.length == 1
-                          ? '1 album'
-                          : '${albumes.length} albumes',
+                          ? '1 álbum'
+                          : '${albumes.length} álbumes',
                       style: textos.bodySmall,
                     ),
                   ],
@@ -68,7 +68,7 @@ class ArtistaScreen extends ConsumerWidget {
             ),
             if (albumes.isEmpty)
               const SliverToBoxAdapter(
-                child: EstadoVacio(mensaje: 'Sin albumes de este artista.'),
+                child: EstadoVacio(mensaje: 'Sin álbumes de este artista.'),
               )
             else
               SliverPadding(

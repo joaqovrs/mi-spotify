@@ -49,9 +49,11 @@ class _ShellScreenState extends State<ShellScreen> {
             selectedIcon: Icon(Icons.search_rounded),
             label: 'Buscar',
           ),
+          // Un corazon aca decia "favoritos", y la pestaña es mas que eso:
+          // tambien tiene playlists, albumes, artistas y descargas.
           NavigationDestination(
-            icon: Icon(Icons.favorite_outline_rounded),
-            selectedIcon: Icon(Icons.favorite_rounded),
+            icon: Icon(Icons.library_music_outlined),
+            selectedIcon: Icon(Icons.library_music_rounded),
             label: 'Biblioteca',
           ),
           NavigationDestination(

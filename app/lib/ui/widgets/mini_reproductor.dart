@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
+import '../../state/favoritos_providers.dart';
 import '../../state/reproductor_providers.dart';
 import '../reproductor_screen.dart';
+import 'boton_favorito.dart';
 import 'portada.dart';
 
 /// Barra compacta con lo que suena, fija encima de la navegacion.
@@ -65,11 +67,16 @@ class MiniReproductor extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const _BotonPlay(),
-                  IconButton(
-                    onPressed: ref.read(reproductorProvider).skipToNext,
-                    icon: const Icon(Icons.skip_next_rounded),
+                  // El corazon reemplaza al boton de siguiente: saltar de tema
+                  // ya se hace deslizando o desde la notificacion, y marcar
+                  // favorito no se podia sin abrir la pantalla completa.
+                  BotonFavorito(
+                    id: cancion.id,
+                    onAlternar: () => ref
+                        .read(favoritosProvider.notifier)
+                        .alternarCancion(cancionDe(cancion)),
                   ),
+                  const _BotonPlay(),
                 ],
               ),
             ),
