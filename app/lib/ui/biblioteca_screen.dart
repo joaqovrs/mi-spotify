@@ -54,7 +54,7 @@ class BibliotecaScreen extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'Playlists'),
                   Tab(text: 'Canciones'),
-                  Tab(text: 'Albumes'),
+                  Tab(text: 'Álbumes'),
                   Tab(text: 'Artistas'),
                   Tab(text: 'Descargas'),
                 ],
@@ -109,7 +109,7 @@ class _Playlists extends ConsumerWidget {
           nueva,
           if (playlists.isEmpty)
             const EstadoVacio(
-              mensaje: 'Todavia no tienes playlists.',
+              mensaje: 'Todavía no tienes playlists.',
               icono: Icons.queue_music_rounded,
             )
           else
@@ -188,7 +188,7 @@ class _Canciones extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (canciones.isEmpty) {
       return const _Vacio(
-        mensaje: 'Toca el corazon en una cancion para guardarla aqui.',
+        mensaje: 'Toca el corazón en una canción para guardarla aquí.',
         icono: Icons.favorite_border_rounded,
       );
     }
@@ -205,6 +205,10 @@ class _Canciones extends ConsumerWidget {
         onAgregarACola: () => encolar(context, ref, [canciones[i]]),
         onGuardarEnPlaylist: () =>
             agregarAPlaylist(context, ref, [canciones[i]]),
+        // Esta es la unica lista donde sacar el corazon ademas saca la fila:
+        // sin esta opcion habia que ir a buscar la cancion a su album para
+        // poder desmarcarla.
+        onAlternarFavorito: () => alternarFavorito(context, ref, canciones[i]),
       ),
     );
   }
@@ -221,7 +225,7 @@ class _Albumes extends StatelessWidget {
   Widget build(BuildContext context) {
     if (albumes.isEmpty) {
       return const _Vacio(
-        mensaje: 'Los albumes que marques aparecen aqui.',
+        mensaje: 'Los álbumes que marques aparecen aquí.',
         icono: Icons.album_outlined,
       );
     }
@@ -259,7 +263,7 @@ class _Artistas extends StatelessWidget {
   Widget build(BuildContext context) {
     if (artistas.isEmpty) {
       return const _Vacio(
-        mensaje: 'Los artistas que sigas aparecen aqui.',
+        mensaje: 'Los artistas que sigas aparecen aquí.',
         icono: Icons.person_outline_rounded,
       );
     }
