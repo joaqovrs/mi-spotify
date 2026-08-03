@@ -3,6 +3,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../core/descargas_storage.dart';
 import '../core/media_items.dart';
+import '../core/plataforma.dart';
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import 'arbol_multimedia.dart';
@@ -20,7 +21,8 @@ import 'arbol_multimedia.dart';
 /// cada vez que cambia la sesion, en vez de que el handler lea el Keystore por
 /// su cuenta — asi usa siempre la misma doble direccion local/remota que el
 /// resto de la app, sin duplicar esa logica.
-class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
+class ReproductorHandler extends BaseAudioHandler
+    with QueueHandler, SeekHandler {
   ReproductorHandler() {
     _player.playbackEventStream.listen(
       _difundirEstado,
@@ -72,6 +74,15 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _origenPorHoja.clear();
   }
 
+  /// Hasta donde llega el ultimo bloque insertado por [agregarComoSiguiente],
+  /// y en que cancion estaba sonando cuando se inserto. Permite que agregar
+  /// varias canciones seguidas ("a continuacion") las deje en el orden en que
+  /// se agregaron, en vez de cada una empujando a la anterior. Se invalida
+  /// (vuelve a `null`) apenas la cola cambia por otro lado: reproducir una
+  /// lista nueva, reordenar o sacar una cancion.
+  int? _finBloqueSiguiente;
+  int? _actualAlInsertar;
+
   String? _origenCola;
 
   /// De donde salio la cola que esta sonando.
@@ -83,12 +94,76 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   /// que ya no respeta el orden original.
   String? get origenCola => _origenCola;
 
+  // ------------------------------------------------------------- Aleatorio
+  //
+  // `just_audio_media_kit` (el backend de Windows) no tiene implementado
+  // `setShuffleOrder`, asi que delegarle el aleatorio a `just_audio` tira
+  // `UnimplementedError` en escritorio (`_player.shuffle()`). En vez de
+  // pedirselo al reproductor, en escritorio se lleva un aleatorio propio en
+  // Dart: una "bolsa" de indices sin visitar (`_bolsaAleatoria`) de la que
+  // `siguiente` saca uno al azar, y una pila de lo ya visitado
+  // (`_historialAleatorio`) de la que `anterior` puede volver — asi "anterior"
+  // con el aleatorio puesto retrocede por lo que de verdad sonó, no por el
+  // orden del disco. En Android sigue delegando en `just_audio`, que ahi si
+  // lo tiene implementado — no hacia falta reinventar nada que ya andaba.
+
+  bool _aleatorioPropioActivo = false;
+  List<int> _bolsaAleatoria = [];
+  final List<int> _historialAleatorio = [];
+
   /// Si el modo aleatorio esta encendido.
   ///
   /// Es un modo, no una accion: la cola conserva el orden del album o de la
   /// playlist y solo cambia el recorrido. Por eso apagarlo devuelve todo a su
   /// lugar sin tener que recargar nada.
-  bool get aleatorioActivo => _player.shuffleModeEnabled;
+  bool get aleatorioActivo =>
+      esEscritorio ? _aleatorioPropioActivo : _player.shuffleModeEnabled;
+
+  /// Arma una bolsa nueva con todos los indices de la cola salvo [excluir]
+  /// (por defecto, la que suena ahora), y vacia el historial. Se llama al
+  /// prender el aleatorio, al cargar una lista nueva con el aleatorio ya
+  /// puesto, y cada vez que la cola cambia de forma — mover, sacar o agregar
+  /// corre los indices, asi que seguir la bolsa vieja podria mandar a una
+  /// cancion equivocada. Es una simplificacion a proposito: se pierde por
+  /// donde iba la vuelta de aleatorio, pero es un cruce raro (editar la cola
+  /// justo con el aleatorio puesto) y el resultado sigue siendo correcto.
+  void _reiniciarBolsaAleatoria([int? excluir]) {
+    final excluido = excluir ?? _player.currentIndex;
+    _bolsaAleatoria = [
+      for (var i = 0; i < queue.value.length; i++)
+        if (i != excluido) i,
+    ]..shuffle();
+    _historialAleatorio.clear();
+  }
+
+  void _invalidarAleatorioSiActivo() {
+    if (esEscritorio && _aleatorioPropioActivo) _reiniciarBolsaAleatoria();
+  }
+
+  Future<void> _siguienteAleatorio() async {
+    if (queue.value.isEmpty) return;
+    final actual = _player.currentIndex;
+
+    if (_bolsaAleatoria.isEmpty) _reiniciarBolsaAleatoria(actual);
+    if (_bolsaAleatoria.isEmpty) return; // una sola cancion en la cola
+
+    if (actual != null) _historialAleatorio.add(actual);
+    final siguiente = _bolsaAleatoria.removeLast();
+    await _player.seek(Duration.zero, index: siguiente);
+  }
+
+  Future<void> _anteriorAleatorio() async {
+    if (_historialAleatorio.isEmpty) {
+      await _player.seek(Duration.zero);
+      return;
+    }
+
+    final actual = _player.currentIndex;
+    if (actual != null) _bolsaAleatoria.add(actual);
+
+    final anterior = _historialAleatorio.removeLast();
+    await _player.seek(Duration.zero, index: anterior);
+  }
 
   /// Volumen de reproduccion, entre 0 y 1.
   Future<void> setVolume(double volumen) => _player.setVolume(volumen);
@@ -108,6 +183,8 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     queue.add(canciones);
     mediaItem.add(canciones[indice]);
     _origenCola = origen;
+    _finBloqueSiguiente = null;
+    _actualAlInsertar = null;
 
     await _player.setAudioSources(
       canciones.map(_fuenteDe).toList(),
@@ -117,7 +194,11 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
     // Cargar canciones nuevas reinicia el recorrido: hay que sortearlo otra vez
     // o el aleatorio quedaria siguiendo el orden del disco.
-    if (_player.shuffleModeEnabled) await _player.shuffle();
+    if (esEscritorio) {
+      if (_aleatorioPropioActivo) _reiniciarBolsaAleatoria(indice);
+    } else if (_player.shuffleModeEnabled) {
+      await _player.shuffle();
+    }
 
     await _player.play();
   }
@@ -126,11 +207,17 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
     final activo = shuffleMode != AudioServiceShuffleMode.none;
 
-    // Se sortea antes de encender para que cada vez que se active salga un
-    // recorrido nuevo, y no siempre el mismo de la primera vez. `shuffle` deja
-    // primera a la cancion que esta sonando, asi que no se corta nada.
-    if (activo) await _player.shuffle();
-    await _player.setShuffleModeEnabled(activo);
+    if (esEscritorio) {
+      _aleatorioPropioActivo = activo;
+      // Se arma antes de encender para que cada vez que se active salga un
+      // recorrido nuevo, y no siempre el mismo de la primera vez.
+      if (activo) _reiniciarBolsaAleatoria();
+    } else {
+      // Se sortea antes de encender por el mismo motivo. `shuffle` deja
+      // primera a la cancion que esta sonando, asi que no se corta nada.
+      if (activo) await _player.shuffle();
+      await _player.setShuffleModeEnabled(activo);
+    }
 
     playbackState.add(playbackState.value.copyWith(shuffleMode: shuffleMode));
   }
@@ -148,6 +235,9 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     final nueva = [...lista];
     nueva.insert(hasta, nueva.removeAt(desde));
     queue.add(nueva);
+    _finBloqueSiguiente = null;
+    _actualAlInsertar = null;
+    _invalidarAleatorioSiActivo();
 
     await _player.moveAudioSource(desde, hasta);
   }
@@ -160,6 +250,9 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
     final nueva = [...lista]..removeAt(indice);
     queue.add(nueva);
+    _finBloqueSiguiente = null;
+    _actualAlInsertar = null;
+    _invalidarAleatorioSiActivo();
 
     if (nueva.isEmpty) {
       _origenCola = null;
@@ -193,16 +286,24 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     }
 
     queue.add([...queue.value, ...canciones]);
+    _invalidarAleatorioSiActivo();
     await _player.addAudioSources(canciones.map(_fuenteDe).toList());
   }
 
-  /// Mete canciones justo despues de la que esta sonando.
+  /// Mete canciones justo despues de la que esta sonando — o despues del
+  /// ultimo bloque agregado asi, si todavia sigue sonando la misma cancion de
+  /// entonces.
   ///
   /// Al final de la cola no sirve de nada: con un album de quince temas
   /// encolar algo significaba esperar una hora para escucharlo. Lo que se
   /// espera de este boton es "esto va despues de lo que suena, y despues sigue
   /// todo como estaba", asi que se inserta en el medio y el resto del album
   /// conserva su orden detras.
+  ///
+  /// Agregar varias canciones seguidas (sin que nada mas toque la cola en el
+  /// medio) las deja en el orden en que se agregaron: con la cancion 1
+  /// sonando, agregar 5, 3 y 7 en ese orden deja la cola en 1, 5, 3, 7 — no
+  /// 1, 7, 3, 5, que es lo que daria insertar siempre pegado a la que suena.
   Future<void> agregarComoSiguiente(List<MediaItem> canciones) async {
     if (canciones.isEmpty) return;
 
@@ -216,7 +317,9 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       return;
     }
 
-    final destino = actual + 1;
+    final destino = (_finBloqueSiguiente != null && _actualAlInsertar == actual)
+        ? _finBloqueSiguiente!
+        : actual + 1;
 
     final nueva = [...lista]..insertAll(destino, canciones);
     queue.add(nueva);
@@ -225,11 +328,59 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     // adelante sus indices no coinciden con los de la playlist, y aplicarle una
     // edicion de esa pantalla moveria la cancion equivocada.
     _origenCola = null;
+    _actualAlInsertar = actual;
+    _finBloqueSiguiente = destino + canciones.length;
+    _invalidarAleatorioSiActivo();
 
-    await _player.insertAudioSources(
-      destino,
-      canciones.map(_fuenteDe).toList(),
-    );
+    await _insertarEnElMedio(destino, canciones);
+  }
+
+  /// Inserta canciones en el reproductor real, en la posicion [destino].
+  ///
+  /// ⚠️ **En Windows no se puede usar `insertAudioSources` para esto.**
+  /// `just_audio_media_kit` (el backend libmpv) tiene un bug de indices en su
+  /// `concatenatingInsertAll`: agrega la cancion nueva al final de la lista
+  /// nativa y despues la intenta mover a su lugar pasandole como origen la
+  /// *cantidad* de canciones (`length`) en vez del indice de la ultima
+  /// (`length - 1`); ese origen esta siempre fuera de rango, asi que el
+  /// `move` no encuentra nada que mover y no hace nada. Resultado: nuestra
+  /// cola (`queue.value`, lo que muestra la pantalla) queda con la cancion en
+  /// el medio, pero la lista nativa la deja pegada al final — y al tocarla
+  /// desde la fila de reproduccion, la pantalla dice el titulo correcto (sale
+  /// de nuestra propia lista) pero suena lo que hay de verdad en esa posicion
+  /// en mpv, que es otra cosa.
+  ///
+  /// El agregar al final (`agregarACola`) no pisa este bug porque ahi nunca
+  /// hace falta mover nada. Y `moveAudioSource` (el mismo que usa el arrastre
+  /// de la fila de reproduccion, ya probado) tampoco pasa por el
+  /// `concatenatingInsertAll` roto — usa `concatenatingMove`, una funcion
+  /// aparte que si esta bien implementada. Asi que el workaround es agregar
+  /// las canciones al final (`addAudioSources`, funciona) y despues mover
+  /// cada una a su lugar (`moveAudioSource`, funciona), en vez de recargar
+  /// toda la lista: sin el corte de audio que traeria un `setAudioSources`.
+  ///
+  /// Cada cancion recien agregada al final queda en `oldLen + i` y no se
+  /// mueve sola hasta que le toca su turno — mover una cancion **anterior**
+  /// a un lugar que sigue siendo anterior a esta no le cambia el indice —
+  /// asi que alcanza con un solo recorrido, sin recalcular nada entre mover
+  /// una y la siguiente.
+  Future<void> _insertarEnElMedio(
+    int destino,
+    List<MediaItem> canciones,
+  ) async {
+    if (!esEscritorio) {
+      await _player.insertAudioSources(
+        destino,
+        canciones.map(_fuenteDe).toList(),
+      );
+      return;
+    }
+
+    final oldLen = _player.audioSources.length;
+    await _player.addAudioSources(canciones.map(_fuenteDe).toList());
+    for (var i = 0; i < canciones.length; i++) {
+      await _player.moveAudioSource(oldLen + i, destino + i);
+    }
   }
 
   AudioSource _fuenteDe(MediaItem item) {
@@ -284,7 +435,13 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> skipToNext() => _player.seekToNext();
+  Future<void> skipToNext() async {
+    if (esEscritorio && _aleatorioPropioActivo) {
+      await _siguienteAleatorio();
+      return;
+    }
+    await _player.seekToNext();
+  }
 
   @override
   Future<void> skipToPrevious() async {
@@ -294,12 +451,24 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       await _player.seek(Duration.zero);
       return;
     }
+
+    if (esEscritorio && _aleatorioPropioActivo) {
+      await _anteriorAleatorio();
+      return;
+    }
     await _player.seekToPrevious();
   }
 
   @override
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 || index >= queue.value.length) return;
+
+    if (esEscritorio && _aleatorioPropioActivo) {
+      final actual = _player.currentIndex;
+      if (actual != null && actual != index) _historialAleatorio.add(actual);
+      _bolsaAleatoria.remove(index);
+    }
+
     await _player.seek(Duration.zero, index: index);
   }
 
@@ -316,6 +485,10 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   /// puesta mostraria lo que escuchaba quien se fue a quien entre despues.
   Future<void> detenerYVaciar() async {
     _origenCola = null;
+    _finBloqueSiguiente = null;
+    _actualAlInsertar = null;
+    _bolsaAleatoria = [];
+    _historialAleatorio.clear();
     queue.add(const []);
     mediaItem.add(null);
     await _player.stop();
@@ -338,49 +511,55 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
 
     return switch (nodo) {
       NodoRaiz() => nodosRaiz(),
-      NodoListaPlaylists() => cliente == null
-          ? const []
-          : [
-              for (final p in await cliente.playlists())
-                nodoPlaylist(p, portada: _portada(cliente, p.coverArt)),
-            ],
-      NodoListaAlbumes() => cliente == null
-          ? const []
-          : [
-              for (final a in await cliente.albumes(
-                tipo: 'alphabeticalByName',
-                cantidad: 500,
-              ))
-                nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
-            ],
-      NodoListaArtistas() => cliente == null
-          ? const []
-          : [
-              for (final a in await cliente.artistas())
-                nodoArtista(a, portada: _portada(cliente, a.coverArt)),
-            ],
+      NodoListaPlaylists() =>
+        cliente == null
+            ? const []
+            : [
+                for (final p in await cliente.playlists())
+                  nodoPlaylist(p, portada: _portada(cliente, p.coverArt)),
+              ],
+      NodoListaAlbumes() =>
+        cliente == null
+            ? const []
+            : [
+                for (final a in await cliente.albumes(
+                  tipo: 'alphabeticalByName',
+                  cantidad: 500,
+                ))
+                  nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
+              ],
+      NodoListaArtistas() =>
+        cliente == null
+            ? const []
+            : [
+                for (final a in await cliente.artistas())
+                  nodoArtista(a, portada: _portada(cliente, a.coverArt)),
+              ],
       NodoDescargas() => _hojaDescargas(),
-      NodoPlaylist(id: final id) => cliente == null
-          ? const []
-          : _hojaCanciones(
-              parentMediaId,
-              await cliente.cancionesDePlaylist(id),
-              cliente,
-              origen: origenDePlaylist(id),
-            ),
-      NodoAlbum(id: final id) => cliente == null
-          ? const []
-          : _hojaCanciones(
-              parentMediaId,
-              await cliente.cancionesDeAlbum(id),
-              cliente,
-            ),
-      NodoArtista(id: final id) => cliente == null
-          ? const []
-          : [
-              for (final a in await cliente.albumesDeArtista(id))
-                nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
-            ],
+      NodoPlaylist(id: final id) =>
+        cliente == null
+            ? const []
+            : _hojaCanciones(
+                parentMediaId,
+                await cliente.cancionesDePlaylist(id),
+                cliente,
+                origen: origenDePlaylist(id),
+              ),
+      NodoAlbum(id: final id) =>
+        cliente == null
+            ? const []
+            : _hojaCanciones(
+                parentMediaId,
+                await cliente.cancionesDeAlbum(id),
+                cliente,
+              ),
+      NodoArtista(id: final id) =>
+        cliente == null
+            ? const []
+            : [
+                for (final a in await cliente.albumesDeArtista(id))
+                  nodoAlbum(a, portada: _portada(cliente, a.coverArt)),
+              ],
       NodoDesconocido() => const [],
     };
   }
@@ -429,7 +608,10 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   /// primero lo descargado (no necesita servidor), y recien despues un pedido
   /// suelto al servidor.
   @override
-  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) async {
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
     for (final entrada in _hojasCache.entries) {
       final indice = entrada.value.indexWhere((m) => m.id == mediaId);
       if (indice == -1) continue;
