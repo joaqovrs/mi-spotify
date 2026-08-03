@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../state/reproductor_providers.dart';
+import '../avisos.dart';
 
 /// Interruptor del modo aleatorio.
 ///
@@ -23,7 +24,7 @@ class BotonAleatorio extends ConsumerWidget {
         : AppColors.naranjaTexto;
 
     return IconButton(
-      onPressed: () => alternarAleatorio(ref),
+      onPressed: () => _alternar(context, ref),
       tooltip: activo ? 'Aleatorio activado' : 'Aleatorio desactivado',
       isSelected: activo,
       iconSize: 22,
@@ -39,5 +40,21 @@ class BotonAleatorio extends ConsumerWidget {
         color: activo ? acento : tema.textTheme.bodySmall?.color,
       ),
     );
+  }
+
+  /// En la build de escritorio, `just_audio_media_kit` (el reproductor que
+  /// usa Windows) no tiene implementado el orden aleatorio y tira
+  /// `UnimplementedError`. Antes esto quedaba sin capturar: el boton no
+  /// reaccionaba y el error solo se veia en la consola. Ahora se avisa.
+  Future<void> _alternar(BuildContext context, WidgetRef ref) async {
+    final mensajero = ScaffoldMessenger.of(context);
+    try {
+      await alternarAleatorio(ref);
+    } catch (_) {
+      avisar(
+        mensajero,
+        'El aleatorio no está disponible en esta versión de escritorio.',
+      );
+    }
   }
 }

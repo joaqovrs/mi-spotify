@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/plataforma.dart';
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/favoritos_providers.dart';
@@ -124,7 +125,9 @@ class _Carrusel extends ConsumerWidget {
   final ProviderListenable<AsyncValue<List<Album>>> provider;
   final String vacio;
 
-  static const double _lado = 152;
+  // En escritorio hay mas aire para respirar: la misma proporcion de
+  // crecimiento que usa la grilla de Albumes (160 -> 190).
+  double get _lado => esEscritorio ? 176 : 152;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,7 +141,7 @@ class _Carrusel extends ConsumerWidget {
           child: Text(titulo, style: Theme.of(context).textTheme.titleLarge),
         ),
         asincrono.when(
-          loading: () => const EstadoCargando(alto: _lado + 46),
+          loading: () => EstadoCargando(alto: _lado + 46),
           error: (e, _) =>
               EstadoError(error: e, onReintentar: () => recargarBiblioteca(ref)),
           data: (albumes) {
@@ -250,16 +253,15 @@ class _PestanaAlbumes extends ConsumerWidget {
 
           return GridView.builder(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 190,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 18,
-              childAspectRatio: 0.74,
-            ),
+            gridDelegate: esEscritorio
+                ? gridDelegateAlbumesEscritorio
+                : gridDelegateAlbumesMovil,
             itemCount: albumes.length,
             itemBuilder: (context, i) => TarjetaAlbum(
               album: albumes[i],
-              lado: 160,
+              lado: esEscritorio
+                  ? ladoTarjetaAlbumEscritorio
+                  : ladoTarjetaAlbumMovil,
               onTap: () => abrirAlbum(context, albumes[i]),
             ),
           );

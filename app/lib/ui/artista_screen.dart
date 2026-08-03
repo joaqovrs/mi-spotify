@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/plataforma.dart';
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/favoritos_providers.dart';
@@ -33,7 +34,7 @@ class ArtistaScreen extends ConsumerWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const MiniReproductor(),
+      bottomNavigationBar: esEscritorio ? null : const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
         error: (e, _) => EstadoError(

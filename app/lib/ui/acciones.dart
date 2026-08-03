@@ -88,6 +88,10 @@ Future<void> agregarAPlaylist(
   final eleccion = await showModalBottomSheet<_Eleccion>(
     context: context,
     showDragHandle: true,
+    // El area de contenido de escritorio tiene su propio Navigator (para que
+    // abrir un album/playlist no tape la barra lateral); sin esto la hoja
+    // quedaria confinada a ese ancho en vez de cubrir toda la ventana.
+    useRootNavigator: true,
     builder: (_) => const _HojaPlaylists(),
   );
 

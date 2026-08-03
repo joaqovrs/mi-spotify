@@ -90,6 +90,13 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   /// lugar sin tener que recargar nada.
   bool get aleatorioActivo => _player.shuffleModeEnabled;
 
+  /// Volumen de reproduccion, entre 0 y 1.
+  Future<void> setVolume(double volumen) => _player.setVolume(volumen);
+
+  /// Volumen actual, para que un control nuevo arranque mostrando el valor
+  /// real en vez de asumir 1.0.
+  Stream<double> get volumenStream => _player.volumeStream;
+
   /// Carga una lista y arranca en la posicion indicada.
   Future<void> reproducirLista(
     List<MediaItem> canciones,
@@ -300,6 +307,19 @@ class ReproductorHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> stop() async {
     await _player.stop();
     await super.stop();
+  }
+
+  /// Corta la reproduccion y vacia la cola por completo.
+  ///
+  /// Lo usa `main.dart` al cerrar sesion: sin esto la cancion seguia sonando
+  /// con la sesion cerrada, y la app es multiusuario, asi que dejar la cola
+  /// puesta mostraria lo que escuchaba quien se fue a quien entre despues.
+  Future<void> detenerYVaciar() async {
+    _origenCola = null;
+    queue.add(const []);
+    mediaItem.add(null);
+    await _player.stop();
+    await _player.clearAudioSources();
   }
 
   // ------------------------------------------------------------ Android Auto

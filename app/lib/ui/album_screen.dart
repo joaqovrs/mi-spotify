@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/plataforma.dart';
 import '../models/biblioteca.dart';
 import '../state/biblioteca_providers.dart';
 import '../state/favoritos_providers.dart';
@@ -9,6 +10,7 @@ import 'acciones.dart';
 import 'acciones_descarga.dart';
 import 'widgets/boton_aleatorio.dart';
 import 'widgets/boton_favorito.dart';
+import 'widgets/encabezado_detalle_escritorio.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -78,7 +80,7 @@ class AlbumScreen extends ConsumerWidget {
             ),
         ],
       ),
-      bottomNavigationBar: const MiniReproductor(),
+      bottomNavigationBar: esEscritorio ? null : const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
         error: (e, _) => EstadoError(
@@ -88,40 +90,74 @@ class AlbumScreen extends ConsumerWidget {
         data: (canciones) => ListView(
           padding: const EdgeInsets.only(bottom: 28),
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-              child: Column(
-                children: [
-                  Portada(coverArt: album.coverArt, lado: 200, radio: 22),
-                  const SizedBox(height: 18),
-                  Text(
-                    album.nombre,
-                    textAlign: TextAlign.center,
-                    style: textos.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(album.artista, style: textos.bodySmall),
-                  const SizedBox(height: 4),
-                  Text(_subtitulo(canciones.length), style: textos.bodySmall),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: canciones.isEmpty
-                              ? null
-                              : () => reproducirTodo(ref, canciones),
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Reproducir'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const BotonAleatorio(),
-                    ],
-                  ),
-                ],
+            if (esEscritorio) ...[
+              EncabezadoDetalleEscritorio(
+                coverArt: album.coverArt,
+                etiqueta: 'Álbum',
+                titulo: album.nombre,
+                subtitulo: '${album.artista} · ${_subtitulo(canciones.length)}',
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
+                child: Row(
+                  children: [
+                    BotonReproducirGrande(
+                      onPressed: canciones.isEmpty
+                          ? null
+                          : () => reproducirTodo(ref, canciones),
+                    ),
+                    const SizedBox(width: 8),
+                    const BotonAleatorio(),
+                    BotonFavorito(
+                      id: album.id,
+                      onAlternar: () => ref
+                          .read(favoritosProvider.notifier)
+                          .alternarAlbum(album),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.download_rounded),
+                      onPressed: canciones.isEmpty
+                          ? null
+                          : () => descargar(context, ref, canciones),
+                    ),
+                  ],
+                ),
+              ),
+            ] else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                child: Column(
+                  children: [
+                    Portada(coverArt: album.coverArt, lado: 200, radio: 22),
+                    const SizedBox(height: 18),
+                    Text(
+                      album.nombre,
+                      textAlign: TextAlign.center,
+                      style: textos.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(album.artista, style: textos.bodySmall),
+                    const SizedBox(height: 4),
+                    Text(_subtitulo(canciones.length), style: textos.bodySmall),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: canciones.isEmpty
+                                ? null
+                                : () => reproducirTodo(ref, canciones),
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: const Text('Reproducir'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const BotonAleatorio(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             if (canciones.isEmpty)
               const EstadoVacio(mensaje: 'Este álbum no tiene canciones.')
             else

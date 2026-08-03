@@ -12,6 +12,10 @@ mediante una **app Android propia**.
 > **Idioma:** todo el texto de la app va en **español neutro y correctamente acentuado**
 > (decisión del usuario, 01-08-2026). Aplica también a las respuestas de Claude.
 >
+> ⚠️ **Neutro, no argentino**: nada de voseo ni sus conjugaciones (`tienes`, no `tenés`;
+> `escribe`, no `escribí`; `mantén`, no `mantené`). Es un error real que Claude cometio el
+> 02-08-2026 en el chat (uso "Tenés" sin que nadie lo pidiera) — no repetirlo.
+>
 > ⚠️ **Esto revierte la decisión del 31-07-2026**, que era escribir sin tildes. Los textos visibles
 > de `app/lib` ya están corregidos; **los comentarios del código y este documento siguen sin
 > tildes** de la etapa anterior, así que conviven los dos estilos hasta que se decida migrarlos.
@@ -89,6 +93,17 @@ en la propia Debian. Ver Fase 5.
   `WAN:34533 → 192.168.1.194:4533`, dominio **`mimusic.duckdns.org`** actualizado por `cron` cada
   5 minutos, y **Tailscale bajado**. Probado desde el telefono con WiFi apagado. Detalle y trampas
   en la seccion Fase 5.
+- ✅ **Fase 7: app de escritorio Windows, con rediseno estilo Spotify PC y widget flotante
+  (02-08-2026).** Mismo codigo Flutter que Android, target `windows/` agregado al proyecto
+  existente. El reproductor corre sobre `just_audio_media_kit` (libmpv) en vez de
+  `just_audio_windows` (WinRT): ese backend reproducia los streams de Navidrome en silencio, sin
+  avisar del problema. El shell se rehizo al estilo Spotify de escritorio (barra lateral con
+  playlists, barra de reproduccion con volumen y progreso, panel de cola, headers de Album/Playlist
+  con banner, tarjetas redondeadas, Navigator anidado para que abrir un album no tape la barra
+  lateral) y se agrego un **widget flotante**: una ventana de Windows aparte, sin bordes, siempre
+  encima de todo, con la cancion actual y un visualizador de barras (animado, no analisis de audio
+  real — ver la seccion Fase 7 para el porque). Probado en esta maquina. Detalle completo, bugs
+  encontrados y arreglados, y pendientes en la seccion Fase 7.
 
 ### Pendientes anotados
 | Pendiente | Detalle |
@@ -103,6 +118,10 @@ en la propia Debian. Ver Fase 5.
 | ~~Arrastre dentro de la hoja~~ | ✅ Probado el 02-08-2026: **funciona**. Era la duda de si el `SliverReorderableList` se pelearia con el gesto de cerrar la hoja tirando hacia abajo. No se pelean. |
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
+| **Empaquetado del build de Windows** | Por ahora solo `flutter build windows` corriendo local en esta maquina. Falta instalador (MSIX o Inno Setup), icono propio del `.exe` (hoy tiene el placeholder de la plantilla de Flutter) y un job de CI en `windows-latest` — igual que paso con el APK, primero anduvo y se firmo despues. |
+| **Aleatorio no anda en Windows** | `just_audio_media_kit` (libmpv) no tiene implementado `setShuffleOrder`. El boton avisa que no esta disponible en vez de fallar en silencio, pero el orden real no se mezcla. Armarlo de verdad implicaria un shuffle propio en Dart en vez de delegarlo a `just_audio`. |
+| **Widget flotante: visualizador sin analisis de audio real** | Decision consciente (ver Fase 7): las barras animan reactivo, no muestran el espectro real de la cancion. Hacerlo de verdad exige WASAPI loopback + FFT, una pieza de ingenieria aparte. |
+| **Widget flotante: sin estados de hover/foco** | El diseño de Figma especifica hover sobre los botones y contorno de foco de teclado; la version actual solo tiene los colores base, sin esas interacciones finas. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
 | ~~Probar Android Auto~~ | ✅ Probado el 02-08-2026 en un auto real (no hizo falta el Desktop Head Unit): las cuatro carpetas aparecen y la reproduccion anda. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
@@ -622,6 +641,16 @@ app/lib/
   ui/acciones.dart                   encolar, favoritos, guardar en playlist, dialogos
   ui/acciones_descarga.dart          descargar y borrar del telefono
   ui/avisos.dart                     el aviso compartido (rompe un ciclo de imports)
+  core/plataforma.dart               si corresponde el shell de escritorio (hoy: Platform.isWindows)
+  ui/shell_screen_escritorio.dart    shell de escritorio: Navigator anidado + tarjetas redondeadas
+  ui/navegacion_destinos.dart        los 4 destinos, compartidos entre los dos shells
+  ui/widgets/barra_lateral_escritorio.dart       barra lateral: destinos + playlists del usuario
+  ui/widgets/reproductor_bar_escritorio.dart     barra de reproduccion de escritorio (progreso, volumen)
+  ui/widgets/panel_reproduciendo_escritorio.dart panel de cola anclado al costado
+  ui/widgets/cola_reproduccion.dart              cola + al azar, compartido entre la hoja movil y el panel
+  ui/widgets/encabezado_detalle_escritorio.dart  banner de Album/Playlist estilo Spotify
+  services/puente_widget_flotante.dart           mensajeria con la ventana del widget flotante
+  ui/widget_flotante/                            ventana aparte: tarjeta + visualizador animado
 ```
 
 **Android Auto (02-08-2026).** `audio_service` ya implementaba el `MediaBrowserService` de Android
@@ -836,6 +865,179 @@ memoria local del proyecto.
 
 **Freno anti-fuerza-bruta:** 5 intentos fallidos por IP bloquean 10 minutos. El contador vive en
 memoria, asi que `docker compose restart registro` lo limpia si molesta durante las pruebas.
+
+### Fase 7 — App de escritorio Windows (02-08-2026)
+
+El objetivo: un cliente de escritorio con las mismas funciones que la app Android, misma cuenta y
+mismas playlists (viven en el servidor, asi que no hizo falta escribir nada para eso — ver
+[[multiusuario]] mas abajo). **Un solo codigo Flutter**: se agrego el target `windows/` al proyecto
+`app/` existente en vez de un proyecto aparte. `core/`, `models/`, `services/`, `state/` y casi
+todas las pantallas se reusan sin tocar; solo cambia el shell de navegacion.
+
+**Paso 0 — entorno.** `flutter build/run windows` exige Visual Studio con el workload
+*Desktop development with C++*, que no estaba instalado (`flutter doctor` lo marcaba en rojo a
+proposito hasta esta fase). Instalado con Visual Studio Build Tools 2022 (no hace falta la IDE
+completa, Android Studio ya cubre el editor). Dos trampas:
+
+- **Modo de desarrollador de Windows**, para que Flutter pueda usar symlinks con los plugins.
+  `start ms-settings:developers` y activar la llave — es una pantalla de Configuracion, no algo que
+  se resuelva por consola sin permisos de administrador.
+- **Falta el componente ATL** (`atlstr.h`), que no viene en el workload de C++ por defecto y lo
+  necesita `flutter_secure_storage_windows` para compilar. Se agrega desde el *Visual Studio
+  Installer* → Modificar → *Componentes individuales* → buscar "ATL" → marcar *C++ ATL para las
+  herramientas de compilacion mas recientes (x86 y x64)*.
+
+**Paso 1 — el reproductor cambia de motor.** `audio_service`/`just_audio` no traen backend propio
+para Windows. Se agrego `audio_service_win` (SMTC: teclas multimedia + Centro de actividades) y, en
+un primer intento, `just_audio_windows` (WinRT MediaPlayer). Este ultimo **compilaba y reproducia
+sin ningun error**, pero **no salia sonido**: la barra de progreso avanzaba y el proceso aparecia en
+el mezclador de volumen de Windows con el dispositivo y el volumen correctos, solo que en silencio
+absoluto. Se descarto por `just_audio_media_kit` (usa libmpv por debajo), que reproduce los mismos
+streams de Navidrome sin problema. `audio_service_win` se mantuvo — es un backend distinto,
+independiente de cual reproductor real use `just_audio` por debajo — asi que `ReproductorHandler`
+(la clase entera, cola, aleatorio, resolucion streaming-vs-descargado) se reuso sin cambios.
+
+⚠️ **Por que importa esto:** un backend que reproduce en silencio sin tirar ningun error es mucho
+peor que uno que falla ruidosamente. Si no se hubiera probado con sonido de verdad (y no solo
+mirando que la UI avanzara), esto habria quedado como "andando" sin estarlo.
+
+**Paso 2 — shell de escritorio.** `core/plataforma.dart` expone `esEscritorio`
+(`Platform.isWindows`, a proposito nada mas: es el unico destino de escritorio construido y
+probado). `main.dart` es el **unico** punto de bifurcacion: `_Puerta` elige entre `ShellScreen`
+(barra inferior, sin tocar) y `ShellScreenEscritorio` (nueva: `NavigationRail` a la izquierda,
+mismo `IndexedStack` con las mismas 4 pantallas, mismo `MiniReproductor` anclado abajo). Los 4
+destinos (icono, icono seleccionado, etiqueta) se sacaron a `ui/navegacion_destinos.dart` para que
+los dos shells no diverjan. Nada mas cambio: `ReproductorScreen` sigue siendo una ruta completa,
+`cola_sheet.dart` y las hojas de `acciones.dart` siguen como `showModalBottomSheet` (Flutter los
+centra bien en una ventana ancha, sin ajustes), y los gestos de arrastre (`Dismissible`,
+`ReorderableDelayedDragStartListener`) andan igual con mouse que con el dedo.
+
+**Dos bugs reales, encontrados al probar el checklist de siempre (no exclusivos de Windows):**
+
+- **Cerrar sesion no paraba la musica.** `SesionNotifier.cerrarSesion()` solo borraba las
+  credenciales guardadas y cambiaba el estado a `SesionCerrada`; nunca tocaba al reproductor. En
+  Windows esto ademas disparaba una tormenta de excepciones sin parar (`favoritosProvider`,
+  `descargasProvider` y `playlistsProvider` piden `clienteProvider` en el constructor de su
+  `StateNotifier`, no dentro de una funcion async — si algo los vuelve a evaluar despues del
+  logout, ese pedido explota de forma sincronica, sin capturar, y Riverpod reintenta la
+  reconstruccion en cada frame para siempre porque ninguno de los tres es `autoDispose`).
+  Arreglado en dos puntos, ambos en el `ref.listen(sesionProvider, ...)` de `main.dart`: se agrego
+  `ReproductorHandler.detenerYVaciar()` (para y vacia la cola) y se invalidan los tres providers al
+  cerrar sesion, para que se tiren abajo en limpio en vez de quedar colgados con un cliente viejo.
+  Este bug probablemente tambien existe en Android — ahi simplemente nunca se noto, porque un error
+  no capturado en modo release no hace nada visible.
+- **El boton de aleatorio no reacciona en albumes ni playlists (especifico de Windows).**
+  `just_audio_media_kit` no tiene implementado `setShuffleOrder()`, asi que `_player.shuffle()`
+  tira `UnimplementedError` **antes** de llegar a la linea que actualiza el estado — el boton se
+  queda como si no hubiera pasado nada, sin ninguna pista de por que. `BotonAleatorio` ahora captura
+  el error y avisa *"El aleatorio no esta disponible en esta version de escritorio"* en vez de
+  fallar en silencio. El orden real seguir sin mezclarse queda anotado como pendiente (ver la
+  tabla de pendientes): arreglarlo de verdad implicaria un shuffle propio en Dart, no delegarlo a
+  `just_audio`.
+
+**Alcance de esta pasada:** que ande localmente. `flutter build windows` deja una carpeta con el
+`.exe` y sus `.dll`; instalador (MSIX o Inno Setup), icono propio del ejecutable y CI en
+`windows-latest` quedan pendientes, igual que paso con la firma del APK.
+
+**Rediseno estilo Spotify PC (02-08-2026, a pedido explicito del usuario tras ver la primera
+version).** El shell de arriba andaba, pero se veia como el telefono estirado. Se reconstruyo
+manteniendo los mismos colores de la app (`AppColors`/`AppTheme`, nada de paleta nueva):
+
+- **Barra lateral** (`ui/widgets/barra_lateral_escritorio.dart`, 260px): logo + los 4 destinos de
+  siempre + "Tu biblioteca" con las playlists del usuario listadas ahi mismo (fila propia,
+  `_FilaPlaylistLateral`, mas angosta que `FilaPlaylist`).
+- **Barra de reproduccion** (`ui/widgets/reproductor_bar_escritorio.dart`, ~90px fijo, reemplaza a
+  `MiniReproductor` en escritorio): progreso arrastrable, volumen, anterior/siguiente, y los botones
+  de aleatorio/cola de siempre. Requirio agregar volumen al handler
+  (`ReproductorHandler.setVolume`/`volumenStream`, sobre `just_audio`'s `setVolume`/`volumeStream`
+  — no existia ningun control de volumen en la app hasta ahora).
+- **Panel de cola** (`ui/widgets/panel_reproduciendo_escritorio.dart`): la fila de reproduccion pero
+  anclada al costado en vez de taparlo todo. La logica de la cola (`_Cola`, `_FilaCola`, las
+  sugerencias al azar) se **extrajo** de `cola_sheet.dart` a `ui/widgets/cola_reproduccion.dart`
+  (mudanza mecanica, sin cambiar comportamiento) para que la hoja modal de movil y el panel de
+  escritorio compartan el mismo codigo en vez de dos copias.
+- **Header de Album/Playlist tipo Spotify** (`ui/widgets/encabezado_detalle_escritorio.dart`):
+  banner con degrade de marca + caratula + titulo grande, y una fila de iconos (circulo de play
+  chico + aleatorio + favorito/descargar) en vez del boton grande "Reproducir" de movil. Gateado por
+  `esEscritorio` en `album_screen.dart`/`playlist_screen.dart`; movil no cambia.
+- **Navigator anidado para el contenido** (`ui/shell_screen_escritorio.dart`): sin esto, abrir un
+  album o una playlist tapaba toda la ventana (barra lateral incluida), porque
+  `Navigator.of(context)` resolvia siempre al `Navigator` raiz de `MaterialApp`. La solucion
+  estandar de Flutter es envolver el area de contenido en su **propio** `Navigator`
+  (`_navegadorContenido`, un `GlobalKey<NavigatorState>`) — todo lo que ya hacia
+  `Navigator.of(context).push(...)` en cualquier pantalla (`abrirAlbum`, `_Playlists._abrir`, etc.)
+  sigue exactamente igual, porque automaticamente encuentra el Navigator **mas cercano**, que ahora
+  es el nuevo. El indice de seccion (`_indice`) paso de campo de `State` a
+  `indiceEscritorioProvider`, porque ese Navigator no vuelve a llamar a `onGenerateRoute` solo
+  porque el padre se reconstruyo. Efecto colateral: `showModalBottomSheet` por defecto usa el
+  Navigator **mas cercano**, asi que la hoja de "agregar a playlist" (`ui/acciones.dart`) necesito
+  `useRootNavigator: true` para seguir cubriendo toda la ventana en vez de solo el area de
+  contenido.
+- **Tarjetas flotantes con bordes redondos:** el shell paso de paneles pegados con lineas
+  divisorias a tarjetas redondeadas (radio 16, el mismo que ya usa el resto del tema) separadas por
+  aire, sobre un lienzo de fondo. El area de contenido en si tambien es una tarjeta — para que se
+  note (y no solo en Album/Playlist, que ya traen su propio degrade), se pisa
+  `scaffoldBackgroundColor` con un `Theme` que envuelve nada mas que ese `Navigator`, asi todas las
+  pantallas de adentro (Inicio, Buscar, Biblioteca, Ajustes, Album, Artista, Playlist) heredan el
+  mismo tono sin tener que tocar cada una.
+- Se saco el `MiniReproductor` duplicado que quedaba dentro de `AlbumScreen`/`PlaylistScreen`/
+  `ArtistaScreen` (`bottomNavigationBar`): esas pantallas son movil-y-escritorio compartidas, y en
+  escritorio ya esta la barra de reproduccion de siempre afuera.
+
+### Widget flotante de escritorio (02-08-2026)
+
+Ventana de Windows aparte — sin bordes, siempre encima de cualquier otra ventana (no solo de Mi
+Music), arrastrable — con la cancion actual, controles de transporte y un visualizador de barras.
+Se prende con un boton nuevo al lado del de la fila de reproduccion
+(`_ControlesDerechaEscritorio` en `reproductor_bar_escritorio.dart`). Nacio de un diseño completo en
+Figma que trajo el usuario (medidas, colores y hasta una implementacion de referencia en JavaScript
+con Web Audio API).
+
+**Limitacion real, conversada y aceptada de antemano:** el diseño de referencia analiza el audio de
+verdad (`AnalyserNode` sobre un `<audio>` HTML). Nuestra app reproduce con `media_kit` (libmpv) de
+forma nativa — no hay ningun `<audio>` del que colgarse, y `media_kit` no expone datos de espectro
+en su API de Dart. Captar el audio del sistema en vivo (WASAPI loopback) para un analisis real es
+otra pieza de ingenieria aparte. **Decision:** el visualizador es una animacion reactiva, no un
+analisis real — se mueve con viveza mientras suena musica (cada barra hacia un objetivo aleatorio
+propio, resorteado cada tanto, con la misma curva de ataque-rapido/caida-lenta del diseño original)
+y se aplana en pausa (la formula de reposo exacta del diseño de referencia). Pendiente si algun dia
+se quiere de verdad: WASAPI loopback + FFT.
+
+**Arquitectura: dos ventanas, un solo reproductor.** Flutter en Windows no tiene multiples ventanas
+gratis. Se uso `desktop_multi_window` (crea una ventana nueva respaldada por **otro proceso** del
+mismo `.exe`, relanzado con argumentos especiales) junto con `window_manager` (aplicado *adentro* de
+esa ventana nueva, para dejarla sin bordes/siempre encima/fondo transparente — esto ultimo es lo que
+deja ver las esquinas redondas como esquinas de verdad y no un rectangulo recortado).
+
+- **`main.dart` bifurca** al principio de `main(List<String> args)`: si `WindowController
+  .fromCurrentEngine().arguments` no esta vacio, esta corrida es la ventana del widget — arranca
+  `WidgetFlotanteApp` y nada mas (ni `JustAudioMediaKit` ni `AudioService`, esa ventana no
+  reproduce nada). `windows/runner/flutter_window.cpp` necesito el parche que pide el propio
+  `README` de `desktop_multi_window`: sin registrar los plugins de nuevo para cada ventana nueva
+  (`DesktopMultiWindowSetWindowCreatedCallback`), la ventana del widget arranca sin ninguno.
+- **El widget es tonto a proposito.** Es un motor de Flutter distinto, sin acceso al `ProviderScope`
+  de la ventana principal — no puede leer `reproductorProvider` ni ningun otro provider. Solo dibuja
+  lo que le llega y manda de vuelta que boton se toco. Toda la logica real vive en
+  `services/puente_widget_flotante.dart`, del lado de la ventana principal:
+  `PuenteWidgetFlotanteNotifier` crea/muestra/esconde la ventana
+  (`WindowController.create`/`.show()`/`.hide()`), le resuelve la caratula (archivo local si esta
+  descargada, si no la URL de Subsonic — la misma logica que ya usa `Portada`, para que la ventana
+  del widget no tenga que saber de Subsonic ni de descargas) y se la manda por
+  `invokeMethod('actualizar', json)` cada vez que cambia la cancion o el estado de reproduccion
+  (`ref.listen` a nivel de `ProviderContainer`, registrado una vez en `main()` — no dentro del
+  arbol de widgets, porque `configurarPuenteWidgetFlotante` corre antes de `runApp`). Los tres
+  botones de transporte del widget mandan `'anterior'`/`'reproducir_pausa'`/`'siguiente'` de vuelta
+  a la ventana principal, que ejecuta los mismos metodos de `ReproductorHandler` de siempre.
+- **Direccion de los mensajes:** cada ventana tiene su propio `WindowController.fromCurrentEngine()`
+  (para *recibir*, via `setWindowMethodHandler`) y usa `WindowController.fromWindowId(id)` del otro
+  lado (para *mandar*, via `invokeMethod`). El id de la ventana principal viaja adentro de los
+  `arguments` con los que se crea la ventana del widget (`jsonEncode({'idPrincipal': ...})`), en vez
+  de asumir que la principal siempre es la ventana `0`.
+- `ui/widget_flotante/` (carpeta nueva, sin Riverpod ni el tema de la app — es una pieza visual
+  autonoma fiel al Figma, no una pantalla mas de Mi Music): `widget_flotante_app.dart` (raiz +
+  configuracion de la ventana nativa), `tarjeta_widget_flotante.dart` (la tarjeta 400×132 con las
+  medidas exactas de `especificaciones.md`), `visualizador_pintor.dart` (el `CustomPainter` del
+  espectro).
 
 ### Etiquetas: por que Navidrome parte una recopilacion en varios albumes (02-08-2026)
 

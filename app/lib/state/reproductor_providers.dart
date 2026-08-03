@@ -32,6 +32,11 @@ final colaProvider = StreamProvider<List<MediaItem>>((ref) {
   return ref.watch(reproductorProvider).queue;
 });
 
+/// Volumen actual, entre 0 y 1. Lo usa el control de volumen de escritorio.
+final volumenProvider = StreamProvider<double>((ref) {
+  return ref.watch(reproductorProvider).volumenStream;
+});
+
 /// Posicion y duracion juntas, que es como las necesita la barra de progreso.
 class ProgresoReproduccion {
   const ProgresoReproduccion({
