@@ -7,9 +7,19 @@ import 'portada.dart';
 /// de Playlist de escritorio — la unica pieza de la fila de acciones que es
 /// identica entre los dos.
 class BotonReproducirGrande extends StatelessWidget {
-  const BotonReproducirGrande({required this.onPressed, super.key});
+  const BotonReproducirGrande({
+    required this.onPressed,
+    this.reproduciendo = false,
+    super.key,
+  });
 
   final VoidCallback? onPressed;
+
+  /// Si esta lista (el album o la playlist del header) es la que suena
+  /// ahora mismo — para mostrar pausa en vez de reproducir. Quien arma el
+  /// widget tambien tiene que cambiar `onPressed` acorde (pausar en vez de
+  /// arrancar de nuevo); este boton solo dibuja, no decide la accion.
+  final bool reproduciendo;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +36,9 @@ class BotonReproducirGrande extends StatelessWidget {
         iconSize: 26,
         color: Colors.white,
         onPressed: onPressed,
-        icon: const Icon(Icons.play_arrow_rounded),
+        icon: Icon(
+          reproduciendo ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        ),
       ),
     );
   }

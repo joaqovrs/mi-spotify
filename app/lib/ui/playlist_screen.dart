@@ -56,7 +56,7 @@ class PlaylistScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.queue_music_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Reproducir todo a continuación'),
+                      Text('Añadir todo a la cola'),
                     ],
                   ),
                 ),
@@ -174,6 +174,8 @@ class _Contenido extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textos = Theme.of(context).textTheme;
     final sonandoId = ref.watch(cancionActualProvider).value?.id;
+    final cargada = listaCargada(ref, canciones);
+    final sonandoPlaylist = contieneLaQueSuena(ref, canciones);
 
     return CustomScrollView(
       slivers: [
@@ -195,8 +197,13 @@ class _Contenido extends ConsumerWidget {
               child: Row(
                 children: [
                   BotonReproducirGrande(
+                    reproduciendo: sonandoPlaylist,
                     onPressed: canciones.isEmpty
                         ? null
+                        : sonandoPlaylist
+                        ? () => ref.read(reproductorProvider).pause()
+                        : cargada
+                        ? () => ref.read(reproductorProvider).play()
                         : () => reproducirTodo(
                             ref,
                             canciones,

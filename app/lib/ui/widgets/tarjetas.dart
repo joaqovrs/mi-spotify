@@ -1,8 +1,10 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../models/biblioteca.dart';
+import '../../models/descarga.dart';
 import '../../state/descargas_providers.dart';
 import '../../state/favoritos_providers.dart';
 import '../acciones_descarga.dart';
@@ -208,128 +210,174 @@ class FilaCancion extends ConsumerWidget {
                 // El menu se cierra antes de correr el `onTap`, asi que las
                 // acciones usan el contexto de la fila y no el del menu, que
                 // para entonces ya no existe.
-                itemBuilder: (_) {
-                  final esFavorito = ref
-                      .read(idsFavoritosProvider)
-                      .contains(cancion.id);
-
-                  return [
-                    if (onAlternarFavorito != null)
-                      PopupMenuItem<void>(
-                        onTap: onAlternarFavorito,
-                        child: Row(
-                          children: [
-                            Icon(
-                              esFavorito
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 20,
-                              color: esFavorito ? AppColors.naranja : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              esFavorito
-                                  ? 'Quitar de favoritos'
-                                  : 'Agregar a favoritos',
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (onAgregarACola != null)
-                      PopupMenuItem<void>(
-                        onTap: onAgregarACola,
-                        child: const Row(
-                          children: [
-                            Icon(Icons.queue_music_rounded, size: 20),
-                            SizedBox(width: 12),
-                            Text('Reproducir a continuación'),
-                          ],
-                        ),
-                      ),
-                    if (onGuardarEnPlaylist != null)
-                      PopupMenuItem<void>(
-                        onTap: onGuardarEnPlaylist,
-                        child: const Row(
-                          children: [
-                            Icon(Icons.playlist_add_rounded, size: 20),
-                            SizedBox(width: 12),
-                            Text('Guardar en playlist'),
-                          ],
-                        ),
-                      ),
-                    if (onQuitarDePlaylist != null)
-                      PopupMenuItem<void>(
-                        onTap: onQuitarDePlaylist,
-                        child: const Row(
-                          children: [
-                            Icon(Icons.playlist_remove_rounded, size: 20),
-                            SizedBox(width: 12),
-                            Text('Quitar de la playlist'),
-                          ],
-                        ),
-                      ),
-                    if (descarga != null)
-                      PopupMenuItem<void>(
-                        onTap: () => quitarDescarga(context, ref, descarga),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded, size: 20),
-                            SizedBox(width: 12),
-                            Text('Borrar del teléfono'),
-                          ],
-                        ),
-                      )
-                    else if (!enCamino)
-                      PopupMenuItem<void>(
-                        onTap: () => descargar(context, ref, [cancion]),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.download_rounded, size: 20),
-                            SizedBox(width: 12),
-                            Text('Descargar'),
-                          ],
-                        ),
-                      ),
-                  ];
-                },
+                itemBuilder: (_) =>
+                    _itemsMenu(context, ref, descarga, enCamino),
               ),
           ],
         ),
       ),
     );
 
-    if (onAgregarACola == null) return fila;
-
-    return Dismissible(
-      // Por instancia y no por id: en una playlist la misma cancion puede
-      // estar repetida y dos Dismissible hermanos no pueden compartir clave.
-      key: ObjectKey(cancion),
-      direction: DismissDirection.startToEnd,
-      // Nunca se descarta de verdad: el gesto es un atajo para encolar, asi
-      // que se ejecuta la accion y la fila vuelve sola a su lugar.
-      confirmDismiss: (_) async {
-        onAgregarACola!();
-        return false;
-      },
-      dismissThresholds: const {DismissDirection.startToEnd: 0.28},
-      background: Container(
-        color: acento.withValues(alpha: 0.16),
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.queue_music_rounded, color: acento),
-            const SizedBox(width: 10),
-            Text(
-              'A continuación',
-              style: textos.labelLarge?.copyWith(color: acento),
+    final contenido = onAgregarACola == null
+        ? fila
+        : Dismissible(
+            // Por instancia y no por id: en una playlist la misma cancion
+            // puede estar repetida y dos Dismissible hermanos no pueden
+            // compartir clave.
+            key: ObjectKey(cancion),
+            direction: DismissDirection.startToEnd,
+            // Nunca se descarta de verdad: el gesto es un atajo para
+            // encolar, asi que se ejecuta la accion y la fila vuelve sola a
+            // su lugar.
+            confirmDismiss: (_) async {
+              onAgregarACola!();
+              return false;
+            },
+            dismissThresholds: const {DismissDirection.startToEnd: 0.28},
+            background: Container(
+              color: acento.withValues(alpha: 0.16),
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.queue_music_rounded, color: acento),
+                  const SizedBox(width: 10),
+                  Text(
+                    'A la cola',
+                    style: textos.labelLarge?.copyWith(color: acento),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
-      child: fila,
+            child: fila,
+          );
+
+    if (!_tieneMenu) return contenido;
+
+    // Clic derecho en cualquier parte de la fila abre el mismo menu que el
+    // boton "...". `Listener` no compite en la arena de gestos (a diferencia
+    // de un `GestureDetector`), asi que envolver la fila con esto no le saca
+    // el tap ni el arrastre a nadie de lo que ya tiene adentro.
+    return Listener(
+      onPointerDown: (evento) {
+        if (evento.buttons & kSecondaryMouseButton == 0) return;
+        _mostrarMenuClicDerecho(
+          context,
+          ref,
+          evento.position,
+          descarga,
+          enCamino,
+        );
+      },
+      child: contenido,
     );
+  }
+
+  void _mostrarMenuClicDerecho(
+    BuildContext context,
+    WidgetRef ref,
+    Offset posicionGlobal,
+    Descarga? descarga,
+    bool enCamino,
+  ) {
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+
+    showMenu<void>(
+      context: context,
+      position: RelativeRect.fromRect(
+        posicionGlobal & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: _itemsMenu(context, ref, descarga, enCamino),
+    );
+  }
+
+  /// Las mismas opciones del boton "...", extraidas aparte para que el clic
+  /// derecho pueda abrir exactamente el mismo menu sin duplicar la lista.
+  List<PopupMenuEntry<void>> _itemsMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Descarga? descarga,
+    bool enCamino,
+  ) {
+    final esFavorito = ref.read(idsFavoritosProvider).contains(cancion.id);
+
+    return [
+      if (onAlternarFavorito != null)
+        PopupMenuItem<void>(
+          onTap: onAlternarFavorito,
+          child: Row(
+            children: [
+              Icon(
+                esFavorito
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                size: 20,
+                color: esFavorito ? AppColors.naranja : null,
+              ),
+              const SizedBox(width: 12),
+              Text(esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'),
+            ],
+          ),
+        ),
+      if (onAgregarACola != null)
+        PopupMenuItem<void>(
+          onTap: onAgregarACola,
+          child: const Row(
+            children: [
+              Icon(Icons.queue_music_rounded, size: 20),
+              SizedBox(width: 12),
+              Text('Añadir a la cola'),
+            ],
+          ),
+        ),
+      if (onGuardarEnPlaylist != null)
+        PopupMenuItem<void>(
+          onTap: onGuardarEnPlaylist,
+          child: const Row(
+            children: [
+              Icon(Icons.playlist_add_rounded, size: 20),
+              SizedBox(width: 12),
+              Text('Guardar en playlist'),
+            ],
+          ),
+        ),
+      if (onQuitarDePlaylist != null)
+        PopupMenuItem<void>(
+          onTap: onQuitarDePlaylist,
+          child: const Row(
+            children: [
+              Icon(Icons.playlist_remove_rounded, size: 20),
+              SizedBox(width: 12),
+              Text('Quitar de la playlist'),
+            ],
+          ),
+        ),
+      if (descarga != null)
+        PopupMenuItem<void>(
+          onTap: () => quitarDescarga(context, ref, descarga),
+          child: const Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 20),
+              SizedBox(width: 12),
+              Text('Borrar del teléfono'),
+            ],
+          ),
+        )
+      else if (!enCamino)
+        PopupMenuItem<void>(
+          onTap: () => descargar(context, ref, [cancion]),
+          child: const Row(
+            children: [
+              Icon(Icons.download_rounded, size: 20),
+              SizedBox(width: 12),
+              Text('Descargar'),
+            ],
+          ),
+        ),
+    ];
   }
 }
 

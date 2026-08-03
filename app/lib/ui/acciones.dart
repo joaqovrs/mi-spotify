@@ -10,11 +10,11 @@ import 'avisos.dart';
 import 'widgets/estados.dart';
 import 'widgets/tarjetas.dart';
 
-/// Encola canciones a continuacion de la que suena y confirma con un aviso.
+/// Agrega canciones a la cola (justo despues de la que suena) y confirma con
+/// un aviso.
 ///
 /// El aviso importa: la cola no esta a la vista, asi que sin confirmacion
-/// parece que el boton no hizo nada. Y dice *a continuacion* porque es
-/// justamente lo que no se puede ver.
+/// parece que el boton no hizo nada.
 Future<void> encolar(
   BuildContext context,
   WidgetRef ref,
@@ -29,8 +29,8 @@ Future<void> encolar(
 
   final texto = switch ((arrancaAhora, canciones.length)) {
     (true, _) => 'Reproduciendo',
-    (false, 1) => 'Suena a continuación',
-    (false, final n) => '$n canciones a continuación',
+    (false, 1) => 'Agregada a la cola',
+    (false, final n) => '$n canciones a la cola',
   };
 
   avisar(ScaffoldMessenger.of(context), texto);
@@ -114,7 +114,10 @@ Future<void> agregarAPlaylist(
           nombre: nombre,
           canciones: canciones,
         );
-        avisar(mensajero, '${_cuantas(canciones.length)} en «${creada.nombre}»');
+        avisar(
+          mensajero,
+          '${_cuantas(canciones.length)} en «${creada.nombre}»',
+        );
 
       case _Existente(:final playlist):
         await notifier.agregarCanciones(playlist.id, canciones);

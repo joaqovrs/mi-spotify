@@ -63,8 +63,12 @@ class ProgresoReproduccion {
 final progresoProvider = StreamProvider<ProgresoReproduccion>((ref) {
   final handler = ref.watch(reproductorProvider);
 
-  return Rx.combineLatest3<Duration, PlaybackState, MediaItem?,
-      ProgresoReproduccion>(
+  return Rx.combineLatest3<
+    Duration,
+    PlaybackState,
+    MediaItem?,
+    ProgresoReproduccion
+  >(
     AudioService.position,
     handler.playbackState,
     handler.mediaItem,
@@ -156,6 +160,48 @@ Future<void> agregarComoSiguiente(
   await ref
       .read(reproductorProvider)
       .agregarComoSiguiente(_aMediaItems(ref, canciones));
+}
+
+/// Pausa o reanuda lo que este sonando. Sin nada cargado no hace nada — no
+/// tendria sentido "arrancar" sin ninguna cancion elegida.
+///
+/// Lo usa la tecla espacio del shell de escritorio (`CallbackShortcuts` en
+/// `shell_screen_escritorio.dart`), que solo dispara si el foco actual no se
+/// quedo con la tecla — un campo de texto enfocado (el buscador) sigue
+/// escribiendo el espacio normal, en vez de pausar la musica.
+Future<void> alternarReproduccion(WidgetRef ref) async {
+  if (ref.read(cancionActualProvider).value == null) return;
+
+  final handler = ref.read(reproductorProvider);
+  final reproduciendo =
+      ref.read(estadoReproduccionProvider).value?.playing ?? false;
+
+  if (reproduciendo) {
+    await handler.pause();
+  } else {
+    await handler.play();
+  }
+}
+
+/// Si la cancion cargada ahora mismo (sonando **o en pausa**) pertenece a
+/// esta lista. A proposito no exige que este sonando: una playlist pausada
+/// sigue siendo la playlist puesta, y el boton grande la tiene que poder
+/// reanudar en vez de tratarla como si no hubiera nada cargado.
+bool listaCargada(WidgetRef ref, List<Cancion> canciones) {
+  final actualId = ref.watch(cancionActualProvider).value?.id;
+  if (actualId == null) return false;
+
+  return canciones.any((c) => c.id == actualId);
+}
+
+/// Si esta lista es la que suena de verdad ahora mismo — cargada ([
+/// listaCargada]) y ademas sin pausar. Lo usan los botones grandes de Album
+/// y Playlist en escritorio, para mostrar pausa en vez de reproducir cuando
+/// es esa lista la que esta sonando.
+bool contieneLaQueSuena(WidgetRef ref, List<Cancion> canciones) {
+  final reproduciendo =
+      ref.watch(estadoReproduccionProvider).value?.playing ?? false;
+  return reproduciendo && listaCargada(ref, canciones);
 }
 
 /// Formatea una duracion como `3:07` o `1:02:33`.
