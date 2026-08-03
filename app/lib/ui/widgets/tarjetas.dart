@@ -8,6 +8,29 @@ import '../../state/favoritos_providers.dart';
 import '../acciones_descarga.dart';
 import 'portada.dart';
 
+/// Lado de [TarjetaAlbum] en la grilla de Albumes. En escritorio hay mas aire
+/// para respirar, asi que las tarjetas crecen junto con la grilla.
+const double ladoTarjetaAlbumMovil = 160;
+const double ladoTarjetaAlbumEscritorio = 190;
+
+/// Delegate de la grilla de Albumes (Inicio y Biblioteca comparten estos
+/// mismos valores para no terminar con dos grillas que divergen con el
+/// tiempo). Sigue siendo por `maxCrossAxisExtent`, no por cantidad fija de
+/// columnas, para que la grilla se siga reacomodando sola al redimensionar la
+/// ventana.
+const gridDelegateAlbumesMovil = SliverGridDelegateWithMaxCrossAxisExtent(
+  maxCrossAxisExtent: 190,
+  crossAxisSpacing: 14,
+  mainAxisSpacing: 18,
+  childAspectRatio: 0.74,
+);
+const gridDelegateAlbumesEscritorio = SliverGridDelegateWithMaxCrossAxisExtent(
+  maxCrossAxisExtent: 220,
+  crossAxisSpacing: 20,
+  mainAxisSpacing: 26,
+  childAspectRatio: 0.72,
+);
+
 /// Tarjeta vertical de album para los carruseles y la grilla.
 class TarjetaAlbum extends StatelessWidget {
   const TarjetaAlbum({

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/plataforma.dart';
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import '../state/favoritos_providers.dart';
@@ -10,6 +11,7 @@ import 'acciones.dart';
 import 'acciones_descarga.dart';
 import 'avisos.dart';
 import 'widgets/boton_aleatorio.dart';
+import 'widgets/encabezado_detalle_escritorio.dart';
 import 'widgets/estados.dart';
 import 'widgets/mini_reproductor.dart';
 import 'widgets/portada.dart';
@@ -83,7 +85,7 @@ class PlaylistScreen extends ConsumerWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const MiniReproductor(),
+      bottomNavigationBar: esEscritorio ? null : const MiniReproductor(),
       body: asincrono.when(
         loading: () => const EstadoCargando(alto: 280),
         error: (e, _) => EstadoError(
@@ -175,55 +177,91 @@ class _Contenido extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-            child: Column(
-              children: [
-                Portada(coverArt: playlist.coverArt, lado: 200, radio: 22),
-                const SizedBox(height: 18),
-                Text(
-                  playlist.nombre,
-                  textAlign: TextAlign.center,
-                  style: textos.titleLarge,
-                ),
-                const SizedBox(height: 4),
-                // El resumen se arma con lo que hay en pantalla y no con el
-                // conteo del servidor: si acabas de sacar un tema, el numero
-                // tiene que bajar en el acto.
-                Text(_resumen(), style: textos.bodySmall),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: canciones.isEmpty
-                            ? null
-                            : () => reproducirTodo(
-                                ref,
-                                canciones,
-                                origen: origenDePlaylist(playlist.id),
-                              ),
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        label: const Text('Reproducir'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const BotonAleatorio(),
-                  ],
-                ),
-                if (canciones.length > 1) ...[
-                  const SizedBox(height: 14),
-                  Text(
-                    'Mantén presionada una canción para cambiarla de lugar.',
-                    textAlign: TextAlign.center,
-                    style: textos.bodySmall,
-                  ),
-                ],
-              ],
+        if (esEscritorio) ...[
+          SliverToBoxAdapter(
+            child: EncabezadoDetalleEscritorio(
+              coverArt: playlist.coverArt,
+              etiqueta: 'Playlist',
+              titulo: playlist.nombre,
+              // El resumen se arma con lo que hay en pantalla y no con el
+              // conteo del servidor: si acabas de sacar un tema, el numero
+              // tiene que bajar en el acto.
+              subtitulo: _resumen(),
             ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
+              child: Row(
+                children: [
+                  BotonReproducirGrande(
+                    onPressed: canciones.isEmpty
+                        ? null
+                        : () => reproducirTodo(
+                            ref,
+                            canciones,
+                            origen: origenDePlaylist(playlist.id),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  const BotonAleatorio(),
+                  IconButton(
+                    icon: const Icon(Icons.download_rounded),
+                    onPressed: canciones.isEmpty
+                        ? null
+                        : () => descargar(context, ref, canciones),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              child: Column(
+                children: [
+                  Portada(coverArt: playlist.coverArt, lado: 200, radio: 22),
+                  const SizedBox(height: 18),
+                  Text(
+                    playlist.nombre,
+                    textAlign: TextAlign.center,
+                    style: textos.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_resumen(), style: textos.bodySmall),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: canciones.isEmpty
+                              ? null
+                              : () => reproducirTodo(
+                                  ref,
+                                  canciones,
+                                  origen: origenDePlaylist(playlist.id),
+                                ),
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('Reproducir'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const BotonAleatorio(),
+                    ],
+                  ),
+                  if (canciones.length > 1) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      'Mantén presionada una canción para cambiarla de lugar.',
+                      textAlign: TextAlign.center,
+                      style: textos.bodySmall,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         if (canciones.isEmpty)
           const SliverToBoxAdapter(
             child: EstadoVacio(

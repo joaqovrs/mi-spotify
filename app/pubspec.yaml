@@ -44,6 +44,11 @@ dependencies:
   just_audio: ^0.10.6
   audio_service: ^0.18.19
   rxdart: ^0.28.0
+  audio_service_win: ^0.0.3
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: ^1.0.9
+  desktop_multi_window: ^0.3.0
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

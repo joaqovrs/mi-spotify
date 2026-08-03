@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/plataforma.dart';
 import '../core/subsonic_client.dart';
 import '../models/biblioteca.dart';
 import '../state/favoritos_providers.dart';
@@ -232,16 +233,13 @@ class _Albumes extends StatelessWidget {
 
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 190,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 18,
-        childAspectRatio: 0.74,
-      ),
+      gridDelegate: esEscritorio
+          ? gridDelegateAlbumesEscritorio
+          : gridDelegateAlbumesMovil,
       itemCount: albumes.length,
       itemBuilder: (context, i) => TarjetaAlbum(
         album: albumes[i],
-        lado: 160,
+        lado: esEscritorio ? ladoTarjetaAlbumEscritorio : ladoTarjetaAlbumMovil,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => AlbumScreen(album: albumes[i]),

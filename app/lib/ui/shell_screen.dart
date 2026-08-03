@@ -4,6 +4,7 @@ import 'ajustes_screen.dart';
 import 'biblioteca_screen.dart';
 import 'buscar_screen.dart';
 import 'inicio_screen.dart';
+import 'navegacion_destinos.dart';
 import 'widgets/mini_reproductor.dart';
 
 /// Contenedor principal con la barra de navegacion inferior.
@@ -36,31 +37,15 @@ class _ShellScreenState extends State<ShellScreen> {
         children: [
           const MiniReproductor(),
           NavigationBar(
-        selectedIndex: _indice,
-        onDestinationSelected: (i) => setState(() => _indice = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.music_note_outlined),
-            selectedIcon: Icon(Icons.music_note_rounded),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search_rounded),
-            label: 'Buscar',
-          ),
-          // Un corazon aca decia "favoritos", y la pestaña es mas que eso:
-          // tambien tiene playlists, albumes, artistas y descargas.
-          NavigationDestination(
-            icon: Icon(Icons.library_music_outlined),
-            selectedIcon: Icon(Icons.library_music_rounded),
-            label: 'Biblioteca',
-          ),
-          NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: 'Ajustes',
-              ),
+            selectedIndex: _indice,
+            onDestinationSelected: (i) => setState(() => _indice = i),
+            destinations: [
+              for (final d in destinosNav)
+                NavigationDestination(
+                  icon: Icon(d.icono),
+                  selectedIcon: Icon(d.iconoSeleccionado),
+                  label: d.etiqueta,
+                ),
             ],
           ),
         ],
