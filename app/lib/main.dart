@@ -8,6 +8,7 @@ import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 import 'core/plataforma.dart';
 import 'core/theme.dart';
+import 'services/discord_rpc.dart';
 import 'services/puente_widget_flotante.dart';
 import 'services/reproductor_handler.dart';
 import 'state/descargas_providers.dart';
@@ -66,6 +67,7 @@ Future<void> main(List<String> args) async {
 
   if (Platform.isWindows) {
     configurarPuenteWidgetFlotante(contenedor, ventanaPropia!);
+    configurarDiscordRpc(contenedor);
   }
 
   runApp(

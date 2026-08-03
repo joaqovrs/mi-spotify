@@ -35,9 +35,14 @@ class TarjetaWidgetFlotante extends StatefulWidget {
   State<TarjetaWidgetFlotante> createState() => _TarjetaWidgetFlotanteState();
 }
 
+/// Opacidad de la tarjeta cuando el mouse no esta encima: baja lo suficiente
+/// para no tapar lo que hay detras, sin llegar a ilegible.
+const _opacidadSinFoco = 0.55;
+
 class _TarjetaWidgetFlotanteState extends State<TarjetaWidgetFlotante> {
   _DatosCancion? _cancion;
   bool _reproduciendo = false;
+  bool _mouseEncima = false;
 
   @override
   void initState() {
@@ -74,57 +79,66 @@ class _TarjetaWidgetFlotanteState extends State<TarjetaWidgetFlotante> {
 
   @override
   Widget build(BuildContext context) {
-    return DragToMoveArea(
-      child: Container(
-        width: 400,
-        height: 132,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF131417),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.45),
-              offset: const Offset(0, 8),
-              blurRadius: 24,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _mouseEncima = true),
+      onExit: (_) => setState(() => _mouseEncima = false),
+      child: AnimatedOpacity(
+        opacity: _mouseEncima ? 1 : _opacidadSinFoco,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: DragToMoveArea(
+          child: Container(
+            width: 400,
+            height: 132,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF131417),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  offset: const Offset(0, 8),
+                  blurRadius: 24,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Caratula(cancion: _cancion),
-            const SizedBox(width: 16),
-            Expanded(
-              child: SizedBox(
-                height: 100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Caratula(cancion: _cancion),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 100,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(child: _Meta(cancion: _cancion)),
-                        const SizedBox(width: 8),
-                        _Controles(
-                          reproduciendo: _reproduciendo,
-                          onAnterior: () => _mandar('anterior'),
-                          onReproducirPausa: () => _mandar('reproducir_pausa'),
-                          onSiguiente: () => _mandar('siguiente'),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(child: _Meta(cancion: _cancion)),
+                            const SizedBox(width: 8),
+                            _Controles(
+                              reproduciendo: _reproduciendo,
+                              onAnterior: () => _mandar('anterior'),
+                              onReproducirPausa: () => _mandar('reproducir_pausa'),
+                              onSiguiente: () => _mandar('siguiente'),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        SizedBox(
+                          height: 34,
+                          child: VisualizadorEspectro(reproduciendo: _reproduciendo),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    SizedBox(
-                      height: 34,
-                      child: VisualizadorEspectro(reproduciendo: _reproduciendo),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

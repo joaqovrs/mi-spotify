@@ -7,8 +7,11 @@
 class Servidor {
   const Servidor._();
 
-  /// La que funciona desde cualquier lado: dominio DDNS + puerto abierto.
-  static const String urlRemota = 'http://mimusic.duckdns.org:34533';
+  /// La que funciona desde cualquier lado: dominio DDNS detras de un proxy
+  /// Caddy con HTTPS (03-08-2026). Puerto por defecto (443): no hace falta
+  /// especificarlo. El `34533` (Navidrome directo, sin cifrar) sigue abierto
+  /// en el router por compatibilidad, pero la app ya no lo usa.
+  static const String urlRemota = 'https://mimusic.duckdns.org';
 
   /// La de la red de casa. Es mas rapida y no sale a internet, por eso se
   /// prueba primero. Si no responde (estas afuera), se cae a la remota sola.
@@ -21,4 +24,18 @@ class Servidor {
   /// tiene registro publico: crear un usuario exige credenciales de admin, y
   /// esas no pueden vivir dentro del APK. Ver infra/registro/.
   static const String urlRegistro = 'http://mimusic.duckdns.org:34534';
+}
+
+/// Presencia enriquecida en el Discord de escritorio (ver
+/// `services/discord_rpc.dart`).
+class Discord {
+  const Discord._();
+
+  /// El "Application ID" de la app creada en
+  /// https://discord.com/developers/applications. Discord lo usa para saber
+  /// que aplicacion esta hablando por el pipe local — no es secreto (viaja en
+  /// el propio protocolo, cualquiera con Discord instalado podria leerlo de
+  /// un volcado de red local), asi que no hay problema en tenerlo en el
+  /// codigo fuente.
+  static const String clientId = '1533854500350066808';
 }

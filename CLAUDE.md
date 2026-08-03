@@ -119,13 +119,14 @@ en la propia Debian. Ver Fase 5.
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
 | **Empaquetado del build de Windows** | Por ahora solo `flutter build windows` corriendo local en esta maquina. Falta instalador (MSIX o Inno Setup), icono propio del `.exe` (hoy tiene el placeholder de la plantilla de Flutter) y un job de CI en `windows-latest` — igual que paso con el APK, primero anduvo y se firmo despues. |
-| **Aleatorio no anda en Windows** | `just_audio_media_kit` (libmpv) no tiene implementado `setShuffleOrder`. El boton avisa que no esta disponible en vez de fallar en silencio, pero el orden real no se mezcla. Armarlo de verdad implicaria un shuffle propio en Dart en vez de delegarlo a `just_audio`. |
-| **Widget flotante: visualizador sin analisis de audio real** | Decision consciente (ver Fase 7): las barras animan reactivo, no muestran el espectro real de la cancion. Hacerlo de verdad exige WASAPI loopback + FFT, una pieza de ingenieria aparte. |
+| ~~Aleatorio no anda en Windows~~ | ✅ Resuelto el 03-08-2026: aleatorio propio en Dart (ver Fase 7), sin depender de `just_audio_media_kit`. |
+| **Widget flotante: visualizador sin analisis de audio real** | Decision consciente y **reafirmada** el 03-08-2026: se probo con volumen real (WASAPI loopback) y el usuario prefirio volver a la animacion reactiva de antes — no volver a proponerlo sin que lo pida. Ver Fase 7. |
 | **Widget flotante: sin estados de hover/foco** | El diseño de Figma especifica hover sobre los botones y contorno de foco de teclado; la version actual solo tiene los colores base, sin esas interacciones finas. |
 | **Probar el registro desde afuera** | La regla `34534` ya esta creada en el router, pero nunca se probo con datos moviles. Chequear `http://mimusic.duckdns.org:34534/salud` y despues *Crear cuenta* en la app. |
 | ~~Probar Android Auto~~ | ✅ Probado el 02-08-2026 en un auto real (no hizo falta el Desktop Head Unit): las cuatro carpetas aparecen y la reproduccion anda. |
 | **Respaldar el keystore** | `C:\Users\joaqu\.android-keys\mi-music-release.jks` + su contrasena, a un lugar fuera de esta maquina. Perderlo no tiene vuelta atras (ver la seccion de firma). |
 | **PR de esta tanda** | Rama `docs/fase-5-puertos-abiertos` pusheada con 6 commits (Fase 5, Mi Music, registro, icono, firma). Sale de `feat/descargas-offline`, asi que **conviene mergear primero el PR de descargas**. |
+| ~~Probar Discord de punta a punta~~ | ✅ Probado el 03-08-2026: aparece "Escuchando Mi Music" con titulo, artista, reloj en vivo y **caratula** (esta ultima solo despues de agregar HTTPS al servidor, ver Fase 7). |
 | **Paso 8 del CI/CD** | Ya desbloqueado: falta el workflow que publique el APK firmado en GitHub Releases al taguear, con el keystore como secret del repo. |
 
 ### Datos del servidor
@@ -142,10 +143,11 @@ en la propia Debian. Ver Fase 5.
 | Acceso | `ssh mi-spotify@192.168.1.194` desde Windows |
 | IP publica (dinamica) | `181.162.130.129` al 30-07-2026 — por eso el DDNS |
 | Dominio DDNS | **`mimusic.duckdns.org`** (cuenta DuckDNS gratis) |
-| Puerto externo | `34533` → interno `4533` (TCP) |
+| Puerto externo | `34533` → interno `4533` (TCP) — Navidrome directo, sin cifrar. Sigue abierto por compatibilidad, pero la app ya no lo usa (ver Caddy abajo) |
+| Puertos de Caddy (03-08-2026) | `80→192.168.1.194:80` y `443→192.168.1.194:443` (TCP) — HTTPS de verdad, ver mas abajo |
 | Puerto externo del registro | `34534` → interno `8080` (TCP) — **pendiente de crear en el router** |
 | Navidrome (red local) | `http://192.168.1.194:4533` |
-| Navidrome (remoto) | **`http://mimusic.duckdns.org:34533`** |
+| Navidrome (remoto) | **`https://mimusic.duckdns.org`** (proxy Caddy, HTTPS de verdad desde el 03-08-2026) |
 | Servicio de registro | **`http://mimusic.duckdns.org:34534`** |
 | Tailscale | ❌ dado de baja (`tailscale down`). IP vieja del tailnet: `100.91.22.33` |
 | Repo en el servidor | `~/mi-spotify` (deploy key SSH, solo lectura) |
@@ -344,10 +346,12 @@ viene de Play Store, no porque este mal firmada, y solo desaparece publicandola 
 #### Arreglos en `AndroidManifest.xml` (no obvios)
 - `<uses-permission android:name="android.permission.INTERNET"/>` — Flutter lo agrega solo en debug;
   sin esto el APK de **release** queda sin red.
-- `android:usesCleartextTraffic="true"` — Android 9+ bloquea HTTP sin cifrar y Navidrome es `http://`
-  puro. ⚠️ **Desde la Fase 5 ya no hay tunel de Tailscale que lo cubra:** el trafico (contraseña
-  incluida) viaja en texto plano por internet. Asumido por el usuario; se arregla poniendo HTTPS
-  con un proxy inverso, anotado como mejora opcional en Fase 5.
+- `android:usesCleartextTraffic="true"` — Android 9+ bloquea HTTP sin cifrar. Sigue haciendo falta
+  por `urlLocal` (`192.168.1.194`, sin certificado — no tiene sentido pedirle HTTPS al trafico que
+  ni siquiera sale de casa) y por el servicio de registro (`:34534`, sin cambios). ✅ **Resuelto
+  para el trafico remoto el 03-08-2026:** `urlRemota` paso a `https://mimusic.duckdns.org` detras
+  de un proxy Caddy (ver la seccion de Discord en Fase 7, donde se armo por necesitarlo para las
+  caratulas) — la contraseña ya no viaja en texto plano por internet cuando se esta afuera de casa.
 
 #### Etapas
 | # | Que | Estado |
@@ -516,11 +520,22 @@ orden original. Consecuencias:
 - Insertar en el medio **rompe ese calco**, asi que `agregarComoSiguiente` pone `origenCola` en
   null. Sin eso, reordenar despues la playlist desde su pantalla moveria la cancion equivocada,
   porque los indices de la lista dejaron de coincidir con los de la cola.
-- Encolar dos veces seguidas deja **primera a la ultima** que agregaste, porque cada una se mete
-  pegada a la que suena. Es lo mismo que hace *Reproducir a continuacion* de Spotify.
-- Los textos acompañan al cambio: el menu dice *Reproducir a continuacion*, el fondo del deslizado
-  dice *A continuacion* y el aviso *Suena a continuacion*. Con la cola vacia sigue diciendo
-  *Reproduciendo*, porque ahi no hay un "despues" y lo que hace es arrancar.
+- ~~Encolar dos veces seguidas deja primera a la ultima que agregaste~~ **Revertido el 03-08-2026 a
+  pedido del usuario:** con la cancion 1 sonando, agregar 5, 3 y 7 en ese orden ahora deja la cola
+  en **1, 5, 3, 7** (el orden en que se agregaron), no 1, 7, 3, 5 como antes — que es lo que hace
+  Spotify, pero no lo que se espera de una cola. `ReproductorHandler` guarda hasta donde llega el
+  ultimo bloque insertado (`_finBloqueSiguiente`) y la cancion que sonaba en ese momento
+  (`_actualAlInsertar`): si nada avanzo desde entonces, la proxima insercion va **despues de ese
+  bloque** en vez de pegada a la que suena. Se invalida (vuelve a `null`) apenas la cola cambia por
+  otro lado — reproducir una lista nueva, reordenar o sacar una cancion — para no insertar en un
+  indice que dejo de tener sentido.
+- Los textos acompañan al cambio: el menu dice *Añadir a la cola*, el fondo del deslizado dice
+  *A la cola* y el aviso *Agregada a la cola*. Con la cola vacia sigue diciendo *Reproduciendo*,
+  porque ahi no hay un "despues" y lo que hace es arrancar. ⚠️ **Renombrado el 03-08-2026 a pedido
+  del usuario:** decia *Reproducir a continuacion* / *A continuacion* / *Suena a continuacion*, y
+  eso sonaba a que iba a interrumpir lo que estaba sonando. El comportamiento no cambio (sigue
+  insertando justo despues de la actual, ver mas arriba) — solo el texto, para que describa lo que
+  realmente hace: agregar a la cola.
 - ⚠️ **Con el aleatorio encendido no queda garantizado que suene a continuacion:** `just_audio`
   inserta en la lista, pero el recorrido lo decide el orden sorteado.
 
@@ -651,6 +666,7 @@ app/lib/
   ui/widgets/encabezado_detalle_escritorio.dart  banner de Album/Playlist estilo Spotify
   services/puente_widget_flotante.dart           mensajeria con la ventana del widget flotante
   ui/widget_flotante/                            ventana aparte: tarjeta + visualizador animado
+  services/discord_rpc.dart                      presencia enriquecida en Discord (pipe local + isolate)
 ```
 
 **Android Auto (02-08-2026).** `audio_service` ya implementaba el `MediaBrowserService` de Android
@@ -926,14 +942,39 @@ centra bien en una ventana ancha, sin ajustes), y los gestos de arrastre (`Dismi
   cerrar sesion, para que se tiren abajo en limpio en vez de quedar colgados con un cliente viejo.
   Este bug probablemente tambien existe en Android — ahi simplemente nunca se noto, porque un error
   no capturado en modo release no hace nada visible.
-- **El boton de aleatorio no reacciona en albumes ni playlists (especifico de Windows).**
+- ~~El boton de aleatorio no reacciona en albumes ni playlists (especifico de Windows).~~
   `just_audio_media_kit` no tiene implementado `setShuffleOrder()`, asi que `_player.shuffle()`
-  tira `UnimplementedError` **antes** de llegar a la linea que actualiza el estado — el boton se
-  queda como si no hubiera pasado nada, sin ninguna pista de por que. `BotonAleatorio` ahora captura
-  el error y avisa *"El aleatorio no esta disponible en esta version de escritorio"* en vez de
-  fallar en silencio. El orden real seguir sin mezclarse queda anotado como pendiente (ver la
-  tabla de pendientes): arreglarlo de verdad implicaria un shuffle propio en Dart, no delegarlo a
-  `just_audio`.
+  tira `UnimplementedError` **antes** de llegar a la linea que actualiza el estado. En la primera
+  pasada se capturaba el error y se avisaba *"El aleatorio no esta disponible en esta version de
+  escritorio"*, en vez de fallar en silencio. **Resuelto de verdad el 03-08-2026** con un aleatorio
+  propio en Dart — ver mas abajo, junto con los otros ajustes de controles de escritorio de ese
+  dia.
+
+**Un tercer bug, encontrado el 03-08-2026: agregar una cancion en el medio de la cola sonaba otra
+distinta.** El sintoma engañaba: la fila de reproduccion mostraba el orden correcto, y al tocar una
+de las canciones agregadas, la pantalla de *Reproduciendo* mostraba el titulo esperado — pero
+sonaba otra cancion. La causa esta en `just_audio_media_kit`, no en esta app: su
+`concatenatingInsertAll` agrega la cancion nueva al final de la lista nativa de mpv y despues la
+mueve a su lugar con `Player.move(from, to)`, pero le pasa como `from` la **cantidad** de canciones
+de la lista (`length`) en vez del indice de la que acaba de agregar (`length - 1`). Ese `from`
+siempre esta fuera de rango, `move` no encuentra nada en esa posicion y no hace nada — la cancion
+queda pegada al final de la lista nativa aunque `queue.value` (lo que arma la pantalla) ya la
+muestre en el medio. Tocar una fila de la pantalla salta por *indice* (`skipToQueueItem`), asi que
+termina sonando lo que hay de verdad ahi en mpv, no lo que la pantalla dice que hay.
+
+Insertar al final (`agregarACola`, la sincronizacion con la playlist que suena) no pisa este bug:
+ahi nunca hace falta el `move`. Solo se rompe insertando en el medio, que es exactamente lo que hace
+`agregarComoSiguiente` (el boton "a continuacion" de la interfaz).
+
+**Primer workaround (descartado):** rearmar la lista entera con `setAudioSources` evitaba el bug,
+pero cortaba el audio un instante al recargar — molesto agregando varias canciones seguidas.
+**Workaround definitivo, en `ReproductorHandler._insertarEnElMedio`:** `moveAudioSource` (el mismo
+que usa el arrastre de la fila de reproduccion, ya probado) no pasa por el `concatenatingInsertAll`
+roto — usa `concatenatingMove`, una funcion aparte que si esta bien implementada. Asi que en
+escritorio (`esEscritorio`) se agregan las canciones al final (`addAudioSources`, que tampoco pasa
+por el camino roto porque ahi nunca hace falta mover nada) y despues se mueve cada una a su lugar
+con `moveAudioSource` — sin recargar nada, sin cortar el audio. Android sigue usando
+`insertAudioSources` de una sola vez: ese backend nativo no tiene el bug.
 
 **Alcance de esta pasada:** que ande localmente. `flutter build windows` deja una carpeta con el
 `.exe` y sus `.dll`; instalador (MSIX o Inno Setup), icono propio del ejecutable y CI en
@@ -996,12 +1037,25 @@ con Web Audio API).
 **Limitacion real, conversada y aceptada de antemano:** el diseño de referencia analiza el audio de
 verdad (`AnalyserNode` sobre un `<audio>` HTML). Nuestra app reproduce con `media_kit` (libmpv) de
 forma nativa — no hay ningun `<audio>` del que colgarse, y `media_kit` no expone datos de espectro
-en su API de Dart. Captar el audio del sistema en vivo (WASAPI loopback) para un analisis real es
-otra pieza de ingenieria aparte. **Decision:** el visualizador es una animacion reactiva, no un
-analisis real — se mueve con viveza mientras suena musica (cada barra hacia un objetivo aleatorio
-propio, resorteado cada tanto, con la misma curva de ataque-rapido/caida-lenta del diseño original)
-y se aplana en pausa (la formula de reposo exacta del diseño de referencia). Pendiente si algun dia
-se quiere de verdad: WASAPI loopback + FFT.
+en su API de Dart. **Primera pasada (02-08-2026):** el visualizador era una animacion reactiva, sin
+relacion con el audio — cada barra hacia un objetivo aleatorio propio, resorteado cada tanto, con
+la misma curva de ataque-rapido/caida-lenta del diseño original, y se aplanaba en pausa (la formula
+de reposo exacta del diseño de referencia).
+
+**Volumen real, sin bandas (03-08-2026) — revertido el mismo dia.** Se probo reemplazar el azar por
+el volumen real de lo que suena (WASAPI *loopback* via `win32`, un nivel RMS por frame). Tras
+probarlo, **el usuario prefirio la animacion original**: el movimiento del volumen real se sentia
+peor que el aleatorio de la primera pasada, aun con el peso fijo por barra pensado para que no
+subiera todo parejo. Se volvio a la version de `visualizador_pintor.dart` de la Primera pasada de
+arriba y se borro `ui/widget_flotante/captura_audio_sistema.dart` (sin otro uso en el proyecto). El
+paquete `win32` se queda en `pubspec.yaml` igual, porque lo sigue usando `services/discord_rpc.dart`
+(ver la seccion de Discord). **No volver a proponer el volumen real sin que el usuario lo pida** —
+ya se probo y no le gusto, no es que faltara pulirlo.
+
+**La tarjeta baja de opacidad sin el mouse encima (03-08-2026).** `MouseRegion` +
+`AnimatedOpacity` en `tarjeta_widget_flotante.dart`: opacidad completa con el mouse encima, `0,55`
+apenas se va (200 ms, `Curves.easeOut`). Para que el widget deje de taparle algo a quien lo puso
+sobre otra ventana sin tener que cerrarlo.
 
 **Arquitectura: dos ventanas, un solo reproductor.** Flutter en Windows no tiene multiples ventanas
 gratis. Se uso `desktop_multi_window` (crea una ventana nueva respaldada por **otro proceso** del
@@ -1037,7 +1091,191 @@ deja ver las esquinas redondas como esquinas de verdad y no un rectangulo recort
   autonoma fiel al Figma, no una pantalla mas de Mi Music): `widget_flotante_app.dart` (raiz +
   configuracion de la ventana nativa), `tarjeta_widget_flotante.dart` (la tarjeta 400×132 con las
   medidas exactas de `especificaciones.md`), `visualizador_pintor.dart` (el `CustomPainter` del
-  espectro).
+  espectro, animacion reactiva — ver mas abajo por que no es volumen real).
+
+### Presencia enriquecida en Discord (03-08-2026)
+
+A pedido del usuario: que la app de escritorio muestre en Discord "Escuchando Mi Music — Cancion,
+Artista", igual que hace Spotify. **Siempre activo** en escritorio, sin interruptor en Ajustes (a
+diferencia de otras decisiones de esta app, que suelen preferir un interruptor — aca se eligio a
+proposito que ande solo, sin pedirle nada a quien lo usa).
+
+**No hay paquete de Flutter para esto en Windows.** Discord de escritorio abre un named pipe local
+(`\\.\pipe\discord-ipc-N`, sin permisos especiales) que cualquier proceso de la maquina puede
+conectar — asi es como cualquier juego le avisa a Discord que mostrar. El protocolo (cabecera de 8
+bytes con opcode+largo, despues un JSON) es simple, asi que se implemento directo en
+`services/discord_rpc.dart` con las mismas bindings de `win32` que ya trae el proyecto por la
+captura de audio del widget flotante (Fase 7) — sin dependencias nuevas.
+
+- **Requiere un "Application ID" propio**, creado a mano por el usuario en
+  `https://discord.com/developers/applications` (Discord necesita saber que app le esta hablando
+  por el pipe). Vive en `core/config.dart` (`Discord.clientId`). No es secreto — viaja en el propio
+  protocolo del pipe, cualquiera con Discord instalado en la misma maquina podria leerlo — asi que
+  no hay problema en tenerlo en el codigo fuente, a diferencia del codigo de invitacion del
+  registro.
+- ⚠️ **Todo el pipe vive en un `Isolate` aparte, no en el hilo de UI.** `ReadFile` sobre un named
+  pipe sincrono **bloquea** al que lo llama hasta que hay datos. Si Discord se cuelga o el pipe se
+  corta a mitad de una lectura, ese bloqueo se comeria el hilo de UI entero (a diferencia de la
+  captura WASAPI del widget flotante, que solo lee un buffer local ya disponible y nunca espera).
+  El isolate solo se comunica con el resto de la app por mensajes de un `SendPort` — nunca cruza un
+  `HANDLE` nativo entre isolates — asi que un pipe colgado como mucho traba ese isolate, nunca la
+  app.
+- **Reconecta solo cada 15 segundos** si Discord todavia no arranco o se reinicio (actualizacion,
+  cierre de sesion de Windows). Al reconectar, aplica el ultimo estado pedido — asi que si alguien
+  abre Mi Music antes que Discord, apenas Discord arranca aparece la cancion que ya estaba sonando,
+  sin tener que tocar nada.
+- **Sin barra de progreso mientras esta en pausa.** Discord calcula el reloj de "Escuchando" el
+  solo a partir de un `timestamps.start` (ahora menos la posicion actual): mandarlo una sola vez
+  alcanza, no hace falta actualizarlo por segundo. En pausa se omite ese campo a proposito, para
+  que el reloj no siga corriendo con la cancion detenida.
+- **La caratula de una cancion descargada no siempre puede mostrarse.** Discord tiene que poder
+  bajar la imagen el solo desde internet: no sirve pasarle una ruta de archivo local. Para eso se
+  arma la URL con `SubsonicClient` (no con `clienteProvider`, que tira una excepcion sin sesion
+  abierta) y se chequea la sesion a mano — una cancion descargada puede sonar con la sesion
+  cerrada, y en ese caso Discord se queda sin imagen en vez de mandarle algo que nunca va a cargar.
+- ✅ **Probado el 03-08-2026: "Escuchando Mi Music" aparece con titulo, artista y reloj en vivo.**
+  Lo unico que fallo en la primera vuelta fue la caratula (queda como el tema siguiente). El resto
+  — reconexion, timestamp, texto — funciono a la primera.
+
+⚠️ **La caratula necesita HTTPS — no alcanza con la URL de Navidrome tal cual estaba (03-08-2026).**
+Discord solo carga imagenes externas por HTTPS; `Servidor.urlRemota` era `http://` (Navidrome no
+tenia certificado), asi que la caratula quedaba como un simple signo de pregunta en vez de la
+imagen real, aunque el resto de la presencia (titulo, artista, reloj) andaba perfecto. Se resolvio
+agregando **HTTPS de verdad al servidor** (no solo para Discord, de paso arregla algo que ya estaba
+anotado como pendiente: la contraseña viajando en texto plano por internet desde la Fase 5):
+
+- **Caddy** como proxy inverso delante de Navidrome, instalado en la Debian
+  (`sudo apt install caddy`, repo oficial). El `Caddyfile` entero es:
+  ```
+  mimusic.duckdns.org {
+      reverse_proxy localhost:4533
+  }
+  ```
+  Caddy pide y renueva el certificado de Let's Encrypt el solo — no hizo falta tocar nada mas.
+- **Dos reglas nuevas en el router**, TCP `80→192.168.1.194:80` y `443→192.168.1.194:443`. Tienen
+  que ser esos puertos exactos: a diferencia del `34533`/`34534` (elegidos altos a proposito para
+  esquivar escaneres), Let's Encrypt valida el dominio conectandose al puerto estandar — no hay
+  forma de pedirle que use uno raro, es requisito del protocolo ACME, no una preferencia.
+- `Servidor.urlRemota` paso de `http://mimusic.duckdns.org:34533` a
+  **`https://mimusic.duckdns.org`** (puerto 443 por defecto). El `34533` directo a Navidrome sigue
+  abierto en el router por compatibilidad, pero la app ya no lo usa.
+- **La caratula de Discord se arma siempre contra `Servidor.urlRemota`, nunca contra
+  `sesion.cliente.baseUrlActiva`.** Ese ultimo es el que la app usa para reproducir, y en casa
+  apunta a la direccion local (`192.168.1.194`, sin certificado) — si la caratula usara esa
+  direccion, andaria en Discord estando afuera de casa pero no estando en la red de casa, un bug
+  raro de notar porque "andaba hace un rato". Se arma con un `SubsonicClient` nuevo, angosto a
+  `urlRemota`, en `_imagenParaDiscord` (`services/discord_rpc.dart`) — no hace ninguna peticion de
+  red (`urlPortada` solo arma la URL), asi que crearlo no tiene costo.
+
+### Controles de escritorio: boton de pausa, espacio y mouse (03-08-2026)
+
+Tres pedidos sueltos del usuario sobre como se siente la app de escritorio, resueltos juntos porque
+tocan los mismos archivos.
+
+**El boton grande de Album/Playlist ahora se pone en pausa.** Antes siempre mostraba el triangulo
+de reproducir, aunque esa fuera la lista sonando — tocarlo volvia a arrancar desde el principio.
+`state/reproductor_providers.dart` distingue dos cosas por separado: `listaCargada` (la cancion
+puesta ahora mismo — sonando **o en pausa** — pertenece a esta lista) y `contieneLaQueSuena`
+(ademas de cargada, sin pausar). `BotonReproducirGrande` usa la segunda para el icono, pero la
+accion del boton tiene **tres** salidas, no dos:
+
+- Sonando esta lista → pausa (`handler.pause()`).
+- Pausada esta lista → **reanuda** (`handler.play()`), sin recargar nada.
+- Nada de esta lista cargado → arranca de cero (`reproducirTodo`).
+
+⚠️ **La primera version confundia "cargada" con "sonando".** Sin `listaCargada`, pausar hacia que
+`contieneLaQueSuena` diera `false` (exige `playing == true`), el boton volvia al triangulo de
+reproducir, y tocarlo llamaba a `reproducirTodo` — reiniciando la lista desde el principio en vez
+de retomarla donde había quedado. Reportado por el usuario a la primera prueba.
+
+No distingue **de donde** salio la cancion que suena: si sonara por casualidad un tema de este
+album via otro camino (por ejemplo, encolado suelto desde otra pantalla), el boton igual lo
+tomaria como "esta lista cargada". Se acepto la simplificacion a proposito, en vez de armar un
+sistema de "origen" para albumes como el que ya existe para playlists (`origenCola`): en ese caso
+raro, pausar o reanudar sigue siendo razonable.
+
+**Barra espaciadora para pausar o reanudar**, en `CallbackShortcuts` sobre todo el shell de
+escritorio (`alternarReproduccion`, `state/reproductor_providers.dart`). El motivo por el que no
+hace falta ningun cuidado especial con el buscador: `Shortcuts`/`CallbackShortcuts` solo dispara si
+el foco actual no se quedo con la tecla, y un campo de texto enfocado consume el espacio para
+escribirlo — no llega a burbujear hasta el atajo global. No se probo a mano que esto pase (el
+comportamiento es el que documenta Flutter para `Shortcuts`), asi que si alguna vez el espacio
+pausara la musica mientras se escribe en el buscador, es lo primero para revisar.
+
+**Botones 4 y 5 del mouse para atras/adelante, como en un navegador.** `Listener` alrededor de
+todo el shell (no le saca el click a nadie, a diferencia de un `GestureDetector`) mirando
+`PointerDownEvent.buttons` contra `kBackMouseButton`/`kForwardMouseButton` de
+`package:flutter/gestures.dart`.
+
+- **Atras** es simplemente `Navigator.maybePop()` sobre `_navegadorContenido`.
+- **Adelante no existe en `Navigator`** — Flutter solo trae pila de "atras". Se arma a mano en
+  `_HistorialAdelante` (`NavigatorObserver` en `shell_screen_escritorio.dart`): cada pantalla que
+  se saca (`didPop`) guarda su `builder` — campo publico de `MaterialPageRoute`, la misma funcion
+  que ya la construyo la primera vez — en una lista. Pedir "adelante" saca el ultimo de esa lista y
+  empuja una ruta **nueva** con ese mismo builder, en vez de reinsertar el `Route` que se saco: una
+  vez que un `Route` sale de escena pierde el estado que necesita para reinsertarse tal cual (sus
+  entradas de overlay, sus controladores de animacion), asi que una copia nueva con el mismo
+  builder es lo que imita mejor la pantalla de antes sin arriesgarse a un estado roto.
+- Navegar a algo **nuevo** mientras hay pantallas "adelante" pendientes las descarta — mismo
+  comportamiento que un navegador: click a un link nuevo despues de ir para atras borra el
+  "adelante" que quedaba. `didPush` limpia la lista, salvo que el push sea la propia repeticion de
+  "adelante" (`_reproduciendoAvance`), o se borraria a si mismo apenas se lo pide.
+- Los botones del mouse dentro de una hoja modal (la fila de reproduccion, "agregar a playlist")
+  **no estan cubiertos**: esas se muestran en el overlay de la app, que no es descendiente del
+  `Listener` que envuelve el shell. Sin probar, pendiente si llega a notarse.
+
+**Aleatorio propio en Dart para escritorio (03-08-2026).** El pendiente viejo ("Aleatorio no anda
+en Windows") se resolvio de verdad el mismo dia que se probaron los tres controles de arriba, a
+pedido del usuario tras encontrarse con el aviso de "no disponible". La causa seguia siendo la
+misma: `just_audio_media_kit` no implementa `setShuffleOrder()`, asi que cualquier llamada a
+`_player.shuffle()` en escritorio tira `UnimplementedError`. La solucion no fue arreglar el
+paquete (es de terceros) ni insistir con la API de `just_audio` — es directamente **no usarla en
+escritorio**, y llevar el recorrido aleatorio a mano en `ReproductorHandler`:
+
+- **Una "bolsa" de indices sin visitar** (`_bolsaAleatoria`, `List<int>`), de la que `siguiente`
+  saca uno al azar (`removeLast` sobre una lista ya mezclada con `List.shuffle()`). Cuando se vacia,
+  se rearma con todos los indices salvo el actual — asi nunca repite una cancion antes de haber
+  pasado por todas las demas, ni puede volver a tocar de una la que acaba de sonar.
+- **Una pila de lo ya sonado** (`_historialAleatorio`), para que "anterior" con el aleatorio
+  puesto retroceda por lo que **de verdad sono** en esta sesion de aleatorio, no por el orden del
+  disco — el mismo comportamiento que tiene Spotify. Al ir para atras, la cancion actual vuelve a
+  la bolsa (podria volver a tocarle mas adelante).
+- **`aleatorioActivo` deja de leer `_player.shuffleModeEnabled` en escritorio** y pasa a ser un
+  campo propio (`_aleatorioPropioActivo`): nunca se llama a `_player.setShuffleModeEnabled()` ni a
+  `_player.shuffle()` en Windows, asi que el camino que tira la excepcion queda **completamente
+  esquivado**, no solo capturado. `skipToNext`/`skipToPrevious`/`skipToQueueItem` bifurcan al
+  principio segun `esEscritorio && _aleatorioPropioActivo`; si no, siguen exactamente igual que
+  antes (`_player.seekToNext()` etc.), asi que **Android no se toca** — ahi `just_audio` ya lo
+  tiene bien implementado, no habia nada que arreglar.
+- ⚠️ **Editar la cola con el aleatorio puesto reinicia la vuelta.** Mover, sacar o agregar
+  canciones corre los indices de todos los que venian despues, y la bolsa/el historial quedarian
+  apuntando a la cancion equivocada si no se actualizaran. En vez de reindexar con cuidado cada
+  mutacion, `_invalidarAleatorioSiActivo()` simplemente rearma la bolsa entera (todos los indices
+  salvo el actual) cada vez que la cola cambia de forma. Se pierde por donde iba la vuelta de
+  aleatorio (podria repetir antes una cancion que ya habia sonado en esa vuelta), pero el resultado
+  sigue siendo correcto y es un cruce raro — editar la cola justo con el aleatorio prendido.
+- `BotonAleatorio` volvio a ser un `IconButton` simple, sin el `try/catch` que avisaba "no
+  disponible": ya no hace falta, el camino que fallaba no se ejecuta mas en escritorio.
+
+**Clic derecho abre el menu "..." de una cancion (03-08-2026).** `FilaCancion`
+(`ui/widgets/tarjetas.dart`) tenia el menu de opciones (favorito, agregar a la cola, guardar en
+playlist, descargar) solo detras del boton de tres puntos. Ahora clic derecho en cualquier parte de
+la fila abre exactamente el mismo menu, como en un explorador de archivos de escritorio.
+
+- La lista de opciones se **extrajo** a `_itemsMenu` (mismo metodo que usa el `itemBuilder` del
+  `PopupMenuButton`), para que el boton "..." y el clic derecho compartan el codigo en vez de tener
+  dos copias que puedan divergir.
+- El clic derecho se detecta con un `Listener` (no un `GestureDetector`) envolviendo la fila
+  entera, mirando `PointerDownEvent.buttons` contra `kSecondaryMouseButton` — el mismo patron que
+  ya usa `shell_screen_escritorio.dart` para los botones 4/5 del mouse. `Listener` no compite en la
+  arena de gestos, asi que envolver la fila no le saca el tap normal ni el arrastre del
+  `Dismissible` a nadie.
+- El menu se abre con `showMenu` directo (no con el `PopupMenuButton`, que no tiene forma de
+  dispararse programaticamente desde afuera) posicionado en el punto exacto del clic, usando el
+  `RenderBox` del `Overlay` para convertir la posicion global en el `RelativeRect` que pide
+  `showMenu`.
+- Sin nada que mostrar (`!_tieneMenu`, ninguna de las acciones fue pasada) no se envuelve la fila en
+  el `Listener` — mismo criterio que ya usaba el boton "..." para no aparecer.
 
 ### Etiquetas: por que Navidrome parte una recopilacion en varios albumes (02-08-2026)
 
