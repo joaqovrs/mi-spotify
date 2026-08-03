@@ -64,7 +64,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
-# Icono del APK. Se regenera con:
+# Icono del APK y del .exe de escritorio. Se regenera con:
 #   dart run flutter_launcher_icons
 # Los PNG salen del SVG original (assets/icono/icono.svg) renderizado a 1024px.
 flutter_launcher_icons:
@@ -79,6 +79,13 @@ flutter_launcher_icons:
   # El plugin mete 16% de margen por defecto. El dibujo ya trae aire propio,
   # asi que con ese margen encima la nota queda diminuta dentro del icono.
   adaptive_icon_foreground_inset: 4
+  # .ico del ejecutable de Windows (antes tenia el placeholder de la
+  # plantilla de Flutter). 256 es el tamaño mas grande que soporta el
+  # formato .ico y el que usa el Explorador en la vista de iconos grandes.
+  windows:
+    generate: true
+    image_path: "assets/icono/icono.png"
+    icon_size: 256
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -118,7 +118,8 @@ en la propia Debian. Ver Fase 5.
 | ~~Arrastre dentro de la hoja~~ | ✅ Probado el 02-08-2026: **funciona**. Era la duda de si el `SliverReorderableList` se pelearia con el gesto de cerrar la hoja tirando hacia abajo. No se pelean. |
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
-| **Empaquetado del build de Windows** | Por ahora solo `flutter build windows` corriendo local en esta maquina. Falta instalador (MSIX o Inno Setup), icono propio del `.exe` (hoy tiene el placeholder de la plantilla de Flutter) y un job de CI en `windows-latest` — igual que paso con el APK, primero anduvo y se firmo despues. |
+| **Instalador: probar que corra de verdad en esta maquina** | El `.exe` (`installer/output/MiMusicSetup.exe`) esta generado y comprimido bien, pero WDAC (Device Guard) lo bloquea al ejecutarlo por script — exige "Enterprise signing level". La app en si (`mi_spotify.exe`) sigue abriendo sin problema; el bloqueo es especifico del instalador. Falta probarlo con doble clic interactivo, o revisar la politica WDAC de esta maquina. Ver la seccion de instalador en Fase 7. |
+| **Falta job de CI en `windows-latest`** | El instalador se genera local con `installer/generar-instalador.ps1`. Automatizarlo en GitHub Actions queda pendiente, igual que paso con la firma del APK: primero anduvo local, se automatiza despues. |
 | ~~Aleatorio no anda en Windows~~ | ✅ Resuelto el 03-08-2026: aleatorio propio en Dart (ver Fase 7), sin depender de `just_audio_media_kit`. |
 | **Widget flotante: visualizador sin analisis de audio real** | Decision consciente y **reafirmada** el 03-08-2026: se probo con volumen real (WASAPI loopback) y el usuario prefirio volver a la animacion reactiva de antes — no volver a proponerlo sin que lo pida. Ver Fase 7. |
 | **Widget flotante: sin estados de hover/foco** | El diseño de Figma especifica hover sobre los botones y contorno de foco de teclado; la version actual solo tiene los colores base, sin esas interacciones finas. |
@@ -1276,6 +1277,51 @@ la fila abre exactamente el mismo menu, como en un explorador de archivos de esc
   `showMenu`.
 - Sin nada que mostrar (`!_tieneMenu`, ninguna de las acciones fue pasada) no se envuelve la fila en
   el `Listener` — mismo criterio que ya usaba el boton "..." para no aparecer.
+
+### Instalador de Windows con Inno Setup (03-08-2026)
+
+Pendiente viejo de la Fase 7 ("Empaquetado del build de Windows"): faltaba un instalador de
+verdad, en vez de repartir la carpeta que deja `flutter build windows` a mano. Se eligio **Inno
+Setup** por sobre MSIX porque no exige certificado — MSIX necesita firmar el paquete, y un
+certificado autofirmado igual dispara advertencias fuertes de Windows salvo que se lo instale como
+confiable a mano. Inno Setup arma un instalador clasico ("Siguiente, Siguiente, Instalar"), gratis
+y sin cuenta de desarrollador — el mismo trato que ya tiene el APK sin firma comercial.
+
+- **`installer/mi_music.iss`**: empaqueta lo que deja `flutter build windows --release` en
+  `app/build/windows/x64/runner/Release/`. `PrivilegesRequired=lowest`: se instala en la carpeta
+  del usuario (sin admin, sin UAC), igual que Discord o VS Code — tiene sentido para una app
+  privada de un solo usuario, no hace falta instalarla para toda la maquina.
+- **`installer/generar-instalador.ps1`** + **`.bat`** (doble clic): corre el build de release y
+  despues llama a `ISCC.exe` (Inno Setup) sobre el `.iss`. El resultado queda en
+  `installer/output/MiMusicSetup.exe` (no versionado, `installer/.gitignore`).
+- Inno Setup se instala con `winget install --id JRSoftware.InnoSetup -e`. Queda en
+  `%LOCALAPPDATA%\Programs\Inno Setup 6\`, **no** en `Program Files` — importa para el script, que
+  busca `ISCC.exe` ahi.
+- **El icono del `.exe` dejo de ser el placeholder de la plantilla de Flutter.** Se agrego una
+  seccion `windows:` a `flutter_launcher_icons` en `pubspec.yaml` (mismo paquete que ya generaba el
+  icono de Android, `dart run flutter_launcher_icons` regenera los dos de una), apuntando al mismo
+  `assets/icono/icono.png` de 1024px. `windows/runner/Runner.rc` ya referenciaba
+  `resources/app_icon.ico`, asi que no hizo falta tocar nada del lado de C++.
+
+⚠️ **El instalador compilado esta bloqueado en esta maquina por WDAC (Device Guard), pendiente de
+resolver.** Al correrlo (`MiMusicSetup.exe /VERYSILENT ...`, tanto por PowerShell como por `cmd`)
+Windows lo rechaza con *"bloqueado por la directiva de Device Guard de su organizacion"*. El
+Visor de eventos (`Microsoft-Windows-CodeIntegrity/Operational`, ids 3033/3077) confirma la causa
+exacta: el binario **"did not meet the Enterprise signing level requirements"** contra una politica
+especifica (Policy ID `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`) — exige firma de una entidad
+certificadora de tipo Enterprise, algo que ni siquiera un certificado autofirmado (la alternativa
+de MSIX) cumpliria.
+
+- **No es un problema del instalador ni de la app**: `mi_spotify.exe` (el ejecutable de Flutter,
+  sin firmar igual que el instalador) sigue abriendo sin problema desde la misma maquina y el mismo
+  metodo de invocacion (`cmd //c`). El bloqueo es especifico de `MiMusicSetup.exe` — la hipotesis es
+  que WDAC trata distinto a los binarios con forma de "instalador" (el motor propio de Inno Setup
+  compilado adentro del `.exe`) que a un ejecutable de app comun, aunque no se confirmo la regla
+  exacta que hace esa distincion.
+  Confirmar apretando **doble clic** desde el Explorador (no por script) por si Device Guard se
+  comporta distinto en ejecucion interactiva. **Pendiente:** el usuario tiene que revisar la
+  politica WDAC de esta maquina — no es algo que Claude deba (ni pueda) desactivar por su cuenta,
+  es una politica de seguridad del propio equipo.
 
 ### Etiquetas: por que Navidrome parte una recopilacion en varios albumes (02-08-2026)
 
