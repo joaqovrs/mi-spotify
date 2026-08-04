@@ -118,7 +118,7 @@ en la propia Debian. Ver Fase 5.
 | ~~Arrastre dentro de la hoja~~ | ✅ Probado el 02-08-2026: **funciona**. Era la duda de si el `SliverReorderableList` se pelearia con el gesto de cerrar la hoja tirando hacia abajo. No se pelean. |
 | ~~Trabajo del 01 y 02-08-2026 sin commitear~~ | ✅ Mergeado el 02-08-2026 en el **PR #17** (18 commits, incluidas la Fase 5 y las descargas offline, que venian arrastrandose sin mergear). |
 | **`gh` sigue sin instalar** | Los PR hay que abrirlos a mano en `https://github.com/joaqovrs/mi-spotify/pull/new/<rama>`. Con `winget install GitHub.cli` + `gh auth login` (interactivo, lo tiene que correr el usuario) se podrian crear desde la consola. |
-| **Instalador: probar que corra de verdad en esta maquina** | El `.exe` (`installer/output/MiMusicSetup.exe`) esta generado y comprimido bien, pero WDAC (Device Guard) lo bloquea al ejecutarlo por script — exige "Enterprise signing level". La app en si (`mi_spotify.exe`) sigue abriendo sin problema; el bloqueo es especifico del instalador. Falta probarlo con doble clic interactivo, o revisar la politica WDAC de esta maquina. Ver la seccion de instalador en Fase 7. |
+| **Instalador y binarios nuevos: probar que corran de verdad en esta maquina** | **Smart App Control esta activado** (confirmado por `MSFT_MpComputerStatus`) y bloquea cualquier binario recien compilado sin reputacion en la nube — no solo el instalador. `installer/output/MiMusicSetup.exe` y el `mi_spotify.exe` reconstruido tras el cambio de titulo de ventana (03-08-2026) quedaron bloqueados igual; el `.exe` viejo (compilado antes, mismo hash en cada rebuild que solo toca Dart) siguio abriendo bien toda la sesion. Pendiente que el usuario los abra el con doble clic y decida si confirma la advertencia de Windows. **Apagar Smart App Control no tiene vuelta atras sin reinstalar Windows** — no es algo para tocar sin que el usuario lo decida. Ver la seccion de instalador en Fase 7. |
 | **Falta job de CI en `windows-latest`** | El instalador se genera local con `installer/generar-instalador.ps1`. Automatizarlo en GitHub Actions queda pendiente, igual que paso con la firma del APK: primero anduvo local, se automatiza despues. |
 | ~~Aleatorio no anda en Windows~~ | ✅ Resuelto el 03-08-2026: aleatorio propio en Dart (ver Fase 7), sin depender de `just_audio_media_kit`. |
 | **Widget flotante: visualizador sin analisis de audio real** | Decision consciente y **reafirmada** el 03-08-2026: se probo con volumen real (WASAPI loopback) y el usuario prefirio volver a la animacion reactiva de antes — no volver a proponerlo sin que lo pida. Ver Fase 7. |
@@ -1302,26 +1302,36 @@ y sin cuenta de desarrollador — el mismo trato que ya tiene el APK sin firma c
   icono de Android, `dart run flutter_launcher_icons` regenera los dos de una), apuntando al mismo
   `assets/icono/icono.png` de 1024px. `windows/runner/Runner.rc` ya referenciaba
   `resources/app_icon.ico`, asi que no hizo falta tocar nada del lado de C++.
+- **El titulo de la ventana decia "mi_spotify" en vez de "Mi Music".** `flutter create` lo dejo
+  fijo en `windows/runner/main.cpp` (`window.Create(L"mi_spotify", ...)`), la unica linea de C++ que
+  hacia falta tocar — cambia lo que se ve en la barra de titulo, el Alt+Tab y el Administrador de
+  tareas. Se dejaron sin tocar `InternalName`/`OriginalFilename` en `Runner.rc` (siguen diciendo
+  `mi_spotify`/`mi_spotify.exe`): son metadatos tecnicos que no se ven en uso normal, mismo criterio
+  que ya aplica el proyecto al dejar el `applicationId` de Android y la carpeta del repo sin
+  renombrar (ver la nota de idioma al principio del documento).
 
-⚠️ **El instalador compilado esta bloqueado en esta maquina por WDAC (Device Guard), pendiente de
+⚠️ **El instalador compilado esta bloqueado en esta maquina por Smart App Control, pendiente de
 resolver.** Al correrlo (`MiMusicSetup.exe /VERYSILENT ...`, tanto por PowerShell como por `cmd`)
 Windows lo rechaza con *"bloqueado por la directiva de Device Guard de su organizacion"*. El
 Visor de eventos (`Microsoft-Windows-CodeIntegrity/Operational`, ids 3033/3077) confirma la causa
-exacta: el binario **"did not meet the Enterprise signing level requirements"** contra una politica
-especifica (Policy ID `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`) — exige firma de una entidad
-certificadora de tipo Enterprise, algo que ni siquiera un certificado autofirmado (la alternativa
-de MSIX) cumpliria.
+exacta: el binario **"did not meet the Enterprise signing level requirements"**.
 
-- **No es un problema del instalador ni de la app**: `mi_spotify.exe` (el ejecutable de Flutter,
-  sin firmar igual que el instalador) sigue abriendo sin problema desde la misma maquina y el mismo
-  metodo de invocacion (`cmd //c`). El bloqueo es especifico de `MiMusicSetup.exe` — la hipotesis es
-  que WDAC trata distinto a los binarios con forma de "instalador" (el motor propio de Inno Setup
-  compilado adentro del `.exe`) que a un ejecutable de app comun, aunque no se confirmo la regla
-  exacta que hace esa distincion.
-  Confirmar apretando **doble clic** desde el Explorador (no por script) por si Device Guard se
-  comporta distinto en ejecucion interactiva. **Pendiente:** el usuario tiene que revisar la
-  politica WDAC de esta maquina — no es algo que Claude deba (ni pueda) desactivar por su cuenta,
-  es una politica de seguridad del propio equipo.
+- **Causa real, confirmada el mismo dia:** `Get-CimInstance -Namespace root\Microsoft\Windows\Defender
+  -ClassName MSFT_MpComputerStatus` muestra **`SmartAppControlState: On`** en esta maquina. Smart App
+  Control (Windows 11) bloquea binarios recien compilados que todavia no tienen reputacion en la nube
+  de Microsoft — no es una regla especifica contra "forma de instalador" como se penso en un primer
+  momento. La prueba: el mismo dia, al cambiar `windows/runner/main.cpp` (el titulo de la ventana,
+  ver mas abajo) y recompilar, el **`mi_spotify.exe` normal tambien quedo bloqueado** con el mismo
+  mensaje — pese a que durante toda la sesion anterior el mismo archivo (recompilado varias veces,
+  pero sin tocar el codigo C++, asi que conservaba el mismo hash) habia abierto sin problema. Un
+  cambio en el codigo Dart no toca el ejecutable nativo (el motor de Flutter carga el kernel de Dart
+  aparte, desde `data/`), asi que el hash del `.exe` se mantiene igual entre esos rebuilds y sigue
+  siendo "conocido"; un cambio en C++ genera un binario nuevo, con hash nuevo, sin reputacion.
+- **No es un problema del instalador ni de la app**, es Windows evaluando cualquier binario nuevo sin
+  firma. **Pendiente:** el usuario tiene que abrirlos el con doble clic desde el Explorador y
+  confirmar el aviso de Windows si aparece — no es algo que Claude deba (ni pueda) resolver por su
+  cuenta. **Apagar Smart App Control no tiene vuelta atras sin reinstalar Windows**, asi que no se
+  sugiere como solucion salvo que el usuario lo pida explicitamente sabiendo eso.
 
 ### Etiquetas: por que Navidrome parte una recopilacion en varios albumes (02-08-2026)
 
